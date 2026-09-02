@@ -45,6 +45,11 @@ describe('findPartner', () => {
     const people = [makePerson(0, 1), makePerson(1, 0)]
     expect(findPartner(people, people[0])?.id).toBe(1)
   })
+
+  it('returns undefined when the person has a partner that does not exist', () => {
+    const people = [makePerson(0, 1)];
+    expect(findPartner(people,people[0])).toBeUndefined()
+  })
 })
 
 describe('setPartner', () => {

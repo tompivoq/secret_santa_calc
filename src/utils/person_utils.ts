@@ -1,10 +1,11 @@
 import type { Person } from "../models/person"
+import { find, maxBy } from "lodash-es";
 
 export const getNextId = (list: Person[]): number =>
-    ([...list].sort((a, b) => b.id - a.id)[0]?.id ?? -1) + 1;
+    (maxBy(list, 'id')?.id ?? -1) + 1;
 
 export const findPartner = (people: Person[], person: Person): Person | undefined =>
-    person.partnerId === undefined ? undefined : people.find((p) => p.id === person.partnerId);
+    find(people, {id: person.partnerId});
 
 /**
  * Sets (or clears, when partnerId is null) the reciprocal partner link between
