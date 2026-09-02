@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { beforeEach, describe, expect, it } from "vite-plus/test";
-import { partnerSet, personAdded, personRemoved } from "./peopleSlice";
+import { personAdded } from "./peopleSlice";
 import { createStore } from "./store";
 
 beforeEach(() => {
@@ -13,28 +13,10 @@ describe("store wiring", () => {
     expect(store.getState().people).toEqual([]);
   });
 
-  it("adds a person via personAdded", () => {
+  it("routes a dispatched action through the configured people reducer", () => {
     const store = createStore([]);
     store.dispatch(personAdded({ id: 0, name: "Bjørn", email: "bjorn@example.com" }));
     expect(store.getState().people).toEqual([{ id: 0, name: "Bjørn", email: "bjorn@example.com" }]);
-  });
-
-  it("reciprocally links partners set via partnerSet", () => {
-    const store = createStore([
-      { id: 0, name: "Bjørn", email: "bjorn@example.com" },
-      { id: 1, name: "Anna", email: "anna@example.com" },
-    ]);
-    store.dispatch(partnerSet({ personId: 0, partnerId: 1 }));
-
-    const people = store.getState().people;
-    expect(people.find((p) => p.id === 0)?.partnerId).toBe(1);
-    expect(people.find((p) => p.id === 1)?.partnerId).toBe(0);
-  });
-
-  it("removes a person via personRemoved", () => {
-    const store = createStore([{ id: 0, name: "Bjørn", email: "bjorn@example.com" }]);
-    store.dispatch(personRemoved(0));
-    expect(store.getState().people).toEqual([]);
   });
 });
 

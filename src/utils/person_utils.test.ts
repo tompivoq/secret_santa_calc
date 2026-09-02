@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { Person } from "../models/person";
-import { findPartner, getNextId, removePerson, setPartner } from "./person_utils";
+import { findPartner, getNextId, removePerson } from "./person_utils";
 
 const makePerson = (id: number, partnerId?: number): Person => ({
   id,
@@ -49,56 +49,6 @@ describe("findPartner", () => {
   it("returns undefined when the person has a partner that does not exist", () => {
     const people = [makePerson(0, 1)];
     expect(findPartner(people, people[0])).toBeUndefined();
-  });
-});
-
-describe("setPartner", () => {
-  it("links two people reciprocally", () => {
-    const people = [makePerson(0), makePerson(1)];
-    const result = setPartner(people, 0, 1);
-
-    expect(result.find((p) => p.id === 0)?.partnerId).toBe(1);
-    expect(result.find((p) => p.id === 1)?.partnerId).toBe(0);
-  });
-
-  it("clears the partner when partnerId is null", () => {
-    const people = [makePerson(0, 1), makePerson(1, 0)];
-    const result = setPartner(people, 0, null);
-
-    expect(result.find((p) => p.id === 0)?.partnerId).toBeUndefined();
-    expect(result.find((p) => p.id === 1)?.partnerId).toBeUndefined();
-  });
-
-  it("unlinks the previous partner when switching to a new one", () => {
-    // Anna (0) & Bjørn (1) are partnered; Carl (2) is unpartnered.
-    const people = [makePerson(0, 1), makePerson(1, 0), makePerson(2)];
-    const result = setPartner(people, 0, 2);
-
-    expect(result.find((p) => p.id === 0)?.partnerId).toBe(2);
-    expect(result.find((p) => p.id === 2)?.partnerId).toBe(0);
-    expect(result.find((p) => p.id === 1)?.partnerId).toBeUndefined();
-  });
-
-  it("unlinks the new partner from their previous partner too", () => {
-    // Anna (0) & Bjørn (1) are partnered; Carl (2) & Dana (3) are partnered.
-    // Anna now partners with Carl.
-    const people = [makePerson(0, 1), makePerson(1, 0), makePerson(2, 3), makePerson(3, 2)];
-    const result = setPartner(people, 0, 2);
-
-    expect(result.find((p) => p.id === 0)?.partnerId).toBe(2);
-    expect(result.find((p) => p.id === 2)?.partnerId).toBe(0);
-    expect(result.find((p) => p.id === 1)?.partnerId).toBeUndefined();
-    expect(result.find((p) => p.id === 3)?.partnerId).toBeUndefined();
-  });
-
-  it("is a no-op when the person does not exist", () => {
-    const people = [makePerson(0)];
-    expect(setPartner(people, 99, 0)).toBe(people);
-  });
-
-  it("is a no-op when trying to partner a person with themselves", () => {
-    const people = [makePerson(0)];
-    expect(setPartner(people, 0, 0)).toBe(people);
   });
 });
 

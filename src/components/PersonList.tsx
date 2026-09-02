@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { Person } from "../models/person";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { partnerSet, personRemoved } from "../store/peopleSlice";
+import { selectAllPeople } from "../store/selectors";
 import { findPartner } from "../utils/person_utils";
 import { reject } from "lodash-es";
 
@@ -79,7 +80,7 @@ const ListPerson = ({ person, others, onSetPartner, onDelete }: ListPersonProps)
 };
 
 function PersonList() {
-  const people = useAppSelector((state) => state.people);
+  const people = useAppSelector(selectAllPeople);
   const dispatch = useAppDispatch();
 
   const othersById = useMemo(

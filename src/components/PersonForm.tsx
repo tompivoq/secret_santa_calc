@@ -1,10 +1,11 @@
 import { useState, type SubmitEvent } from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { personAdded } from "../store/peopleSlice";
+import { selectAllPeople } from "../store/selectors";
 import { getNextId } from "../utils/person_utils";
 
 function PersonForm() {
-  const people = useAppSelector((state) => state.people);
+  const people = useAppSelector(selectAllPeople);
   const dispatch = useAppDispatch();
 
   const [name, setName] = useState("");
