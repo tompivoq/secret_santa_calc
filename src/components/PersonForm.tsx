@@ -1,24 +1,24 @@
-import { useState, type SubmitEvent } from 'react'
-import type { Person } from '../models/person'
-import { getNextId } from '../utils/person_utils'
+import { useState, type SubmitEvent } from 'react';
+import type { Person } from '../models/person';
+import { getNextId } from '../utils/person_utils';
 
 interface PersonFormProps {
-  people: Person[]
-  onAddPerson: (person: Person) => void
+  people: Person[];
+  onAddPerson: (person: Person) => void;
 }
 
 function PersonForm({ people, onAddPerson }: PersonFormProps) {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [partnerId, setPartnerId] = useState('')
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [partnerId, setPartnerId] = useState('');
 
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault()
+    event.preventDefault();
 
-    const trimmedName = name.trim()
-    const trimmedEmail = email.trim()
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
     if (!trimmedName || !trimmedEmail) {
-      return
+      return;
     }
 
     onAddPerson({
@@ -26,12 +26,12 @@ function PersonForm({ people, onAddPerson }: PersonFormProps) {
       name: trimmedName,
       email: trimmedEmail,
       partnerId: partnerId === '' ? undefined : Number(partnerId),
-    })
+    });
 
-    setName('')
-    setEmail('')
-    setPartnerId('')
-  }
+    setName('');
+    setEmail('');
+    setPartnerId('');
+  };
 
   return (
     <div className="flex mt-8 p-5 rounded-xl border border-gray-400">
@@ -96,7 +96,7 @@ function PersonForm({ people, onAddPerson }: PersonFormProps) {
       </button>
     </form>
     </div>
-  )
+  );
 }
 
-export default PersonForm
+export default PersonForm;

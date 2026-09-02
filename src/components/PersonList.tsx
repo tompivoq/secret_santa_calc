@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import type { Person } from '../models/person'
-import { findPartner } from '../utils/person_utils'
+import { useState } from 'react';
+import type { Person } from '../models/person';
+import { findPartner } from '../utils/person_utils';
 import { reject } from 'lodash-es';
 
 interface ListPersonProps {
@@ -76,7 +76,7 @@ const ListPerson = ({ person, others, onSetPartner, onDelete }: ListPersonProps)
             </div>
           </li>
         );
-}
+};
 
 interface PersonListProps {
   people: Person[];
@@ -93,20 +93,20 @@ function PersonList({ people, onRemovePerson, onSetPartner }: PersonListProps) {
 
   const confirmDelete = (personId: number) => {
     onRemovePerson(personId);
-  }
+  };
 
   return (
     <ul className="mt-8 flex flex-col gap-3 text-left">
-      {people.map((person, i) => (
+      {people.map((person) => (
         <ListPerson
-          key={i}
+          key={person.id}
           person={person}
           others={getOthers(person.id)}
           onDelete={() => confirmDelete(person.id)}
           onSetPartner={onSetPartner} />
-      ))}      
+      ))}
     </ul>
-  )
+  );
 }
 
-export default PersonList
+export default PersonList;
