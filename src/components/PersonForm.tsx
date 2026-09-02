@@ -1,12 +1,13 @@
 import { useState, type SubmitEvent } from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { personAdded } from "../store/peopleSlice";
-import { selectAllPeople } from "../store/selectors";
-import { getNextId } from "../utils/person_utils";
+import { selectAllPeople, selectMaxPersonId } from "../store/selectors";
 
 function PersonForm() {
   const people = useAppSelector(selectAllPeople);
   const dispatch = useAppDispatch();
+
+  const currentMaxId = useAppSelector(selectMaxPersonId);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -23,7 +24,7 @@ function PersonForm() {
 
     dispatch(
       personAdded({
-        id: getNextId(people),
+        id: currentMaxId !== undefined ? currentMaxId + 1 : 0,
         name: trimmedName,
         email: trimmedEmail,
         partnerId: partnerId === "" ? undefined : Number(partnerId),

@@ -1,8 +1,6 @@
 import type { Person } from "../models/person";
 import { find, maxBy } from "lodash-es";
 
-export const getNextId = (list: Person[]): number => (maxBy(list, "id")?.id ?? -1) + 1;
-
 export const findPartner = (people: Person[], person: Person): Person | undefined =>
   find(people, { id: person.partnerId });
 

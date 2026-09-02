@@ -1,5 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
-import { find } from "lodash-es";
+import { find, maxBy } from "lodash-es";
 import type { Person } from "../models/person";
 import type { RootState } from "./store";
 
@@ -15,4 +15,12 @@ export const findPersonById = (people: Person[], personId: number): Person | und
 export const selectAllPeople = (state: RootState) => state.people;
 
 export const selectPersonById = (personId: number) =>
-  createSelector(selectAllPeople, (allPeople) => findPersonById(allPeople, personId));
+  createSelector(
+    selectAllPeople,
+    (allPeople) => findPersonById(allPeople, personId)
+);
+
+export const selectMaxPersonId = createSelector(
+    selectAllPeople,
+    (allPeople) => maxBy(allPeople, "id")?.id,
+);
