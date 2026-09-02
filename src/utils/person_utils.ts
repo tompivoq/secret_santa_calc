@@ -1,7 +1,7 @@
 import type { Person } from "../models/person"
 
 export const getNextId = (list: Person[]): number =>
-    (list.sort((a, b) => b.id - a.id)[0]?.id || -1) + 1;
+    ([...list].sort((a, b) => b.id - a.id)[0]?.id ?? -1) + 1;
 
 export const findPartner = (people: Person[], person: Person): Person | undefined =>
     person.partnerId === undefined ? undefined : people.find((p) => p.id === person.partnerId);

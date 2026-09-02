@@ -22,6 +22,17 @@ describe('getNextId', () => {
   it('works when the list has a single person', () => {
     expect(getNextId([makePerson(5)])).toBe(6)
   })
+
+  it('returns 1 when the only existing id is 0 (id 0 is falsy, not absent)', () => {
+    expect(getNextId([makePerson(0)])).toBe(1)
+  })
+
+  it('does not mutate the list it is given', () => {
+    const people = [makePerson(0), makePerson(3), makePerson(1)]
+    const original = [...people]
+    getNextId(people)
+    expect(people).toEqual(original)
+  })
 })
 
 describe('findPartner', () => {
