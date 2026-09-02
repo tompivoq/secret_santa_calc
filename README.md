@@ -7,7 +7,7 @@ everything runs client-side.
 ## Stack
 
 - React + TypeScript
-- Vite
+- [Vite+](https://viteplus.dev) — unified toolchain (Vite, Vitest, oxlint, oxfmt)
 
 ## Development
 
@@ -21,4 +21,12 @@ npm run dev
 ```bash
 npm run build
 npm run preview
+```
+
+## Checks
+
+```bash
+npm run lint   # oxlint
+npm test       # vitest
+npx vp check   # format + lint + type-check together
 ```

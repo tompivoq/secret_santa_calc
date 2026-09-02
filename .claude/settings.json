@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npx oxlint *)",
-      "Bash(npx vitest *)"
+      "Bash(npx vitest *)",
+      "WebFetch(domain:npmx.dev)",
+      "WebFetch(domain:viteplus.dev)"
     ]
   }
 }

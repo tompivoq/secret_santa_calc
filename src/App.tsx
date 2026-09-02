@@ -1,15 +1,19 @@
-import { useState } from 'react';
-import PersonForm from './components/PersonForm';
-import PersonList from './components/PersonList';
-import type { Person } from './models/person';
-import { removePerson, setPartner } from './utils/person_utils';
+import { useState } from "react";
+import PersonForm from "./components/PersonForm";
+import PersonList from "./components/PersonList";
+import type { Person } from "./models/person";
+import { removePerson, setPartner } from "./utils/person_utils";
 
 function App() {
   const [people, setPeople] = useState<Person[]>([]);
 
   const handleAddPerson = (person: Person) => {
     const withNewPerson = [...people, person];
-    setPeople(person.partnerId === undefined ? withNewPerson : setPartner(withNewPerson, person.id, person.partnerId));
+    setPeople(
+      person.partnerId === undefined
+        ? withNewPerson
+        : setPartner(withNewPerson, person.id, person.partnerId),
+    );
   };
 
   const handleRemovePerson = (personId: number) => {
@@ -29,7 +33,11 @@ function App() {
 
       <PersonForm people={people} onAddPerson={handleAddPerson} />
 
-      <PersonList people={people} onRemovePerson={handleRemovePerson} onSetPartner={handleSetPartner} />
+      <PersonList
+        people={people}
+        onRemovePerson={handleRemovePerson}
+        onSetPartner={handleSetPartner}
+      />
     </main>
   );
 }
