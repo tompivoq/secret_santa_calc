@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import type { Person } from "../models/person";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { partnerSet, personRemoved } from "../store/peopleSlice";
 import { findPartner } from "../utils/person_utils";
 import { reject } from "lodash-es";
 
@@ -76,13 +78,10 @@ const ListPerson = ({ person, others, onSetPartner, onDelete }: ListPersonProps)
   );
 };
 
-interface PersonListProps {
-  people: Person[];
-  onRemovePerson: (personId: number) => void;
-  onSetPartner: (personId: number, partnerId: number | null) => void;
-}
+function PersonList() {
+  const people = useAppSelector((state) => state.people);
+  const dispatch = useAppDispatch();
 
-function PersonList({ people, onRemovePerson, onSetPartner }: PersonListProps) {
   const othersById = useMemo(
     () => new Map(people.map((person) => [person.id, reject(people, { id: person.id })])),
     [people],
@@ -92,10 +91,6 @@ function PersonList({ people, onRemovePerson, onSetPartner }: PersonListProps) {
     return null;
   }
 
-  const confirmDelete = (personId: number) => {
-    onRemovePerson(personId);
-  };
-
   return (
     <ul className="mt-8 flex flex-col gap-3 text-left">
       {people.map((person) => (
@@ -103,8 +98,8 @@ function PersonList({ people, onRemovePerson, onSetPartner }: PersonListProps) {
           key={person.id}
           person={person}
           others={othersById.get(person.id) ?? []}
-          onDelete={() => confirmDelete(person.id)}
-          onSetPartner={onSetPartner}
+          onDelete={() => dispatch(personRemoved(person.id))}
+          onSetPartner={(personId, partnerId) => dispatch(partnerSet({ personId, partnerId }))}
         />
       ))}
     </ul>

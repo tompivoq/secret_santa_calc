@@ -1,13 +1,12 @@
 import { useState, type SubmitEvent } from "react";
-import type { Person } from "../models/person";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { personAdded } from "../store/peopleSlice";
 import { getNextId } from "../utils/person_utils";
 
-interface PersonFormProps {
-  people: Person[];
-  onAddPerson: (person: Person) => void;
-}
+function PersonForm() {
+  const people = useAppSelector((state) => state.people);
+  const dispatch = useAppDispatch();
 
-function PersonForm({ people, onAddPerson }: PersonFormProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [partnerId, setPartnerId] = useState("");
@@ -21,12 +20,14 @@ function PersonForm({ people, onAddPerson }: PersonFormProps) {
       return;
     }
 
-    onAddPerson({
-      id: getNextId(people),
-      name: trimmedName,
-      email: trimmedEmail,
-      partnerId: partnerId === "" ? undefined : Number(partnerId),
-    });
+    dispatch(
+      personAdded({
+        id: getNextId(people),
+        name: trimmedName,
+        email: trimmedEmail,
+        partnerId: partnerId === "" ? undefined : Number(partnerId),
+      }),
+    );
 
     setName("");
     setEmail("");

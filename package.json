@@ -12,9 +12,11 @@
     "test:watch": "vp test"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.12.0",
     "lodash-es": "^4.18.1",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-redux": "^9.3.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

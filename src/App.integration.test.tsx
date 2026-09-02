@@ -1,8 +1,17 @@
 /** @vitest-environment jsdom */
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Provider } from "react-redux";
 import { describe, expect, it } from "vite-plus/test";
 import App from "./App";
+import { createStore } from "./store/store";
+
+const renderApp = () =>
+  render(
+    <Provider store={createStore([])}>
+      <App />
+    </Provider>,
+  );
 
 const addPerson = async (
   user: ReturnType<typeof userEvent.setup>,
@@ -24,7 +33,7 @@ const addPerson = async (
 describe("App: partner selection reciprocity", () => {
   it("shows the partner selected when creating a new person on the existing person too", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderApp();
 
     await addPerson(user, "Bjørn", "bjorn@example.com");
     await addPerson(user, "Anna", "anna@example.com", "Bjørn");

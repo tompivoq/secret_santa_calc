@@ -8,6 +8,9 @@ everything runs client-side.
 
 - React + TypeScript
 - [Vite+](https://viteplus.dev) — unified toolchain (Vite, Vitest, oxlint, oxfmt)
+- Redux Toolkit — app state lives in a `people` slice ([src/store](src/store)),
+  persisted to `localStorage` so entered people survive a refresh or a
+  returning visit
 
 ## Development
 
