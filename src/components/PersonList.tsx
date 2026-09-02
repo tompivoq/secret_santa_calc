@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Person } from '../models/person';
 import { findPartner } from '../utils/person_utils';
 import { reject } from 'lodash-es';
@@ -85,11 +85,14 @@ interface PersonListProps {
 }
 
 function PersonList({ people, onRemovePerson, onSetPartner }: PersonListProps) {
+  const othersById = useMemo(
+    () => new Map(people.map((person) => [person.id, reject(people, { id: person.id })])),
+    [people],
+  );
+
   if (people.length === 0) {
     return null;
   }
-
-  const getOthers = (personId: number) => reject(people, {id: personId});
 
   const confirmDelete = (personId: number) => {
     onRemovePerson(personId);
@@ -101,7 +104,7 @@ function PersonList({ people, onRemovePerson, onSetPartner }: PersonListProps) {
         <ListPerson
           key={person.id}
           person={person}
-          others={getOthers(person.id)}
+          others={othersById.get(person.id) ?? []}
           onDelete={() => confirmDelete(person.id)}
           onSetPartner={onSetPartner} />
       ))}
