@@ -37,10 +37,10 @@ function PersonForm() {
   };
 
   return (
-    <div className="flex mt-8 p-5 rounded-xl border border-gray-400">
-      <form className="flex flex-col w-full items-stretch gap-4 text-left" onSubmit={handleSubmit}>
-        <div className="flex flex-row justify-between w-full gap-4">
-          <div className="flex flex-col w-full gap-1">
+    <div className="mt-8 flex rounded-xl border border-gray-400 p-5">
+      <form className="flex w-full flex-col items-stretch gap-4 text-left" onSubmit={handleSubmit}>
+        <div className="flex w-full flex-row justify-between gap-4">
+          <div className="flex w-full flex-col gap-1">
             <label htmlFor="name" className="text-sm font-semibold">
               Name
             </label>
@@ -55,7 +55,7 @@ function PersonForm() {
             />
           </div>
 
-          <div className="flex flex-col w-full gap-1">
+          <div className="flex w-full flex-col gap-1">
             <label htmlFor="email" className="text-sm font-semibold">
               Email
             </label>
@@ -93,7 +93,7 @@ function PersonForm() {
 
         <button
           type="submit"
-          className="self-start rounded-md border border-gray-700 px-4 py-2 text-base cursor-pointer hover:bg-gray-100 dark:border-gray-300 dark:hover:bg-gray-800"
+          className="cursor-pointer self-start rounded-md border border-gray-700 px-4 py-2 text-base hover:bg-gray-100 dark:border-gray-300 dark:hover:bg-gray-800"
         >
           Add Person
         </button>

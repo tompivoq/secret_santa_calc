@@ -27,7 +27,7 @@ const ListPerson = ({ person, others, onSetPartner, onDelete }: ListPersonProps)
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex flex-row justify-stretch w-44 items-center">
+        <div className="flex w-44 flex-row items-center justify-stretch">
           <label htmlFor={`partner-${person.id}`} className="text-sm font-semibold">
             Partner
           </label>
@@ -37,7 +37,7 @@ const ListPerson = ({ person, others, onSetPartner, onDelete }: ListPersonProps)
             onChange={(event) =>
               onSetPartner(person.id, event.target.value === "" ? null : Number(event.target.value))
             }
-            className="rounded-md border border-gray-300 mx-2 px-2.5 py-2 text-base w-full dark:border-gray-700"
+            className="mx-2 w-full rounded-md border border-gray-300 px-2.5 py-2 text-base dark:border-gray-700"
           >
             <option value="">None</option>
             {others.map((p) => (

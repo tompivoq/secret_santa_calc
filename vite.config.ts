@@ -15,6 +15,6 @@ export default defineConfig({
   },
   // Oxfmt configuration.
   fmt: {
-    semi: true,
+    sortTailwindcss: true,
   },
 });

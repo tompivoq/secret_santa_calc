@@ -15,12 +15,9 @@ export const findPersonById = (people: Person[], personId: number): Person | und
 export const selectAllPeople = (state: RootState) => state.people;
 
 export const selectPersonById = (personId: number) =>
-  createSelector(
-    selectAllPeople,
-    (allPeople) => findPersonById(allPeople, personId)
-);
+  createSelector(selectAllPeople, (allPeople) => findPersonById(allPeople, personId));
 
 export const selectMaxPersonId = createSelector(
-    selectAllPeople,
-    (allPeople) => maxBy(allPeople, "id")?.id,
+  selectAllPeople,
+  (allPeople) => maxBy(allPeople, "id")?.id,
 );

@@ -8,5 +8,18 @@
       "Bash(npx vp *)",
       "Bash(cd \"c:/Users/thojb/dev/secret_santa_calc\" && rm -rf dist && npx vp build 2>&1)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(jq -r '.tool_input.file_path'); npx oxlint --fix --no-error-on-unmatched-pattern \"$file\"; npx oxfmt --no-error-on-unmatched-pattern \"$file\""
+          }
+        ]
+      }
+    ]
   }
 }
