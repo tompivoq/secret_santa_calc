@@ -1,17 +1,71 @@
 /** @vitest-environment jsdom */
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
-import { describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import App from "./App";
 import { createStore } from "./store/store";
+import type { Person } from "./models/person";
 
 const renderApp = () =>
   render(
-    <Provider store={createStore([])}>
+    <Provider store={createStore()}>
       <App />
     </Provider>,
   );
+
+/**
+ * Stubs `fetch` with a small stateful fake of the people API: POSTs append
+ * to an in-memory list (linking the chosen partner both ways, as the real
+ * server does) and GETs always return the current list. Being stateful
+ * rather than a fixed sequence of canned responses keeps the test immune to
+ * however many times RTK Query decides to refetch.
+ *
+ * This deliberately implements only what this test exercises — the full
+ * reciprocal-link algorithm, with all its unlink-the-previous-partner edge
+ * cases, is covered by the server's own suite against a real database.
+ */
+const stubPeopleApi = () => {
+  const people: Person[] = [];
+  let nextId = 1;
+
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      // RTK Query's fetchBaseQuery calls fetch(request) with a pre-built
+      // Request object rather than fetch(url, init) — the url/method live
+      // on the Request itself, not in a separate init.
+      const request = input instanceof Request ? input : new Request(input, init);
+      const url = new URL(request.url);
+
+      if (url.pathname === "/api/people" && request.method === "GET") {
+        return new Response(JSON.stringify(people), { status: 200 });
+      }
+
+      if (url.pathname === "/api/people" && request.method === "POST") {
+        const body = (await request.json()) as Omit<Person, "id">;
+        const created: Person = { ...body, id: nextId++ };
+        people.push(created);
+
+        if (created.partnerId !== undefined && created.partnerId !== null) {
+          const partner = people.find((p) => p.id === created.partnerId);
+          if (partner) {
+            partner.partnerId = created.id;
+          }
+        }
+        return new Response(JSON.stringify(created), { status: 201 });
+      }
+
+      return new Response(null, { status: 204 });
+    }),
+  );
+
+  return people;
+};
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 const addPerson = async (
   user: ReturnType<typeof userEvent.setup>,
@@ -20,14 +74,6 @@ const addPerson = async (
   phone: string,
   partnerName?: string,
 ) => {
-  // The form fields are reused across successive calls in the same test.
-  // React's DOM value tracker doesn't observe react-hook-form's reset()
-  // (it sets the input's value directly, bypassing React), so a stale
-  // tracker would make the next userEvent.type() append to the old value
-  // instead of the field's actual (visually empty) content. Clearing first
-  // sidesteps that — this is a jsdom/testing-library quirk, not something a
-  // real browser hits, since genuine keystrokes always dispatch trusted
-  // native events the tracker observes correctly.
   await user.clear(screen.getByLabelText("Name"));
   await user.clear(screen.getByLabelText("Email"));
   await user.clear(screen.getByLabelText("Phone"));
@@ -43,22 +89,35 @@ const addPerson = async (
   await user.click(screen.getByRole("button", { name: "Add Person" }));
 };
 
-describe("App: partner selection reciprocity", () => {
-  it("shows the partner selected when creating a new person on the existing person too", async () => {
+describe("App: renders people and their partners as returned by the API", () => {
+  it("sends the chosen partner to the API and renders the link on both people", async () => {
+    const people = stubPeopleApi();
     const user = userEvent.setup();
     renderApp();
 
     await addPerson(user, "Bjørn", "bjorn@example.com", "11223344");
-    await addPerson(user, "Anna", "anna@example.com", "22334455", "Bjørn");
+    await screen.findByText("Bjørn");
 
-    const bjornPartnerSelect = screen.getByLabelText("Partner", {
-      selector: "#partner-0",
-    }) as HTMLSelectElement;
-    expect(bjornPartnerSelect.value).toBe("1");
+    await addPerson(user, "Anna", "anna@example.com", "22334455", "Bjørn");
+    await screen.findByText("Anna");
+
+    // The form sent Bjørn's id as the partner, and the server linked both ways.
+    expect(people).toEqual([
+      { id: 1, name: "Bjørn", email: "bjorn@example.com", phone: 11223344, partnerId: 2 },
+      { id: 2, name: "Anna", email: "anna@example.com", phone: 22334455, partnerId: 1 },
+    ]);
+
+    // ...and the list reflects that link on both rows.
+    await waitFor(() => {
+      const bjornPartnerSelect = screen.getByLabelText("Partner", {
+        selector: "#partner-1",
+      }) as HTMLSelectElement;
+      expect(bjornPartnerSelect.value).toBe("2");
+    });
 
     const annaPartnerSelect = screen.getByLabelText("Partner", {
-      selector: "#partner-1",
+      selector: "#partner-2",
     }) as HTMLSelectElement;
-    expect(annaPartnerSelect.value).toBe("0");
+    expect(annaPartnerSelect.value).toBe("1");
   });
 });

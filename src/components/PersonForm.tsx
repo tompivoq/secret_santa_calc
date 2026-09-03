@@ -1,7 +1,5 @@
-import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { personAdded } from "../store/peopleSlice";
-import { selectAllPeople, selectMaxPersonId } from "../store/selectors";
-import type { PhoneNumber } from "../models/person";
+import { useAddPersonMutation, useGetPeopleQuery } from "../store/peopleApi";
+import type { Person, PhoneNumber } from "../models/person";
 import { isPhoneNumber } from "../models/type_check";
 import { useForm } from "react-hook-form";
 import clsx from "clsx";
@@ -19,9 +17,12 @@ const inputClasses = (hasError: boolean) =>
     hasError ? "border-red-500 dark:border-red-500" : "border-gray-300",
   );
 
+const NO_PEOPLE: Person[] = [];
+
 function PersonForm() {
-  const people = useAppSelector(selectAllPeople);
-  const dispatch = useAppDispatch();
+  const { data } = useGetPeopleQuery();
+  const people = data ?? NO_PEOPLE;
+  const [addPerson] = useAddPersonMutation();
 
   const {
     register,
@@ -29,19 +30,14 @@ function PersonForm() {
     formState: { errors, isValid },
     reset,
   } = useForm<FormData>({ mode: "onChange" });
-  const currentMaxId = useAppSelector(selectMaxPersonId);
 
   const onSubmit = (data: FormData) => {
-    console.log("Form submitted with data", data);
-    dispatch(
-      personAdded({
-        id: currentMaxId !== undefined ? currentMaxId + 1 : 0,
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        partnerId: data.partnerId,
-      }),
-    );
+    addPerson({
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      partnerId: data.partnerId,
+    });
     reset();
   };
 
