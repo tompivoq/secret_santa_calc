@@ -15,17 +15,29 @@ describe("store wiring", () => {
 
   it("routes a dispatched action through the configured people reducer", () => {
     const store = createStore([]);
-    store.dispatch(personAdded({ id: 0, name: "Bjørn", email: "bjorn@example.com" }));
-    expect(store.getState().people).toEqual([{ id: 0, name: "Bjørn", email: "bjorn@example.com" }]);
+    store.dispatch(
+      personAdded({ id: 0, name: "Bjørn", email: "bjorn@example.com", phone: 22334455 }),
+    );
+    expect(store.getState().people).toEqual([
+      { id: 0, name: "Bjørn", email: "bjorn@example.com", phone: 22334455 },
+    ]);
   });
 });
 
 describe("persistence across a simulated reload", () => {
   it("survives creating a fresh store that reads from localStorage, like a page reload would", () => {
     const firstSession = createStore([]);
-    firstSession.dispatch(personAdded({ id: 0, name: "Bjørn", email: "bjorn@example.com" }));
     firstSession.dispatch(
-      personAdded({ id: 1, name: "Anna", email: "anna@example.com", partnerId: 0 }),
+      personAdded({ id: 0, name: "Bjørn", email: "bjorn@example.com", phone: 22334455 }),
+    );
+    firstSession.dispatch(
+      personAdded({
+        id: 1,
+        name: "Anna",
+        email: "anna@example.com",
+        phone: 87654321,
+        partnerId: 0,
+      }),
     );
 
     // No preloaded people passed here, so this reads whatever the subscriber

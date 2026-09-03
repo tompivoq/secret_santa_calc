@@ -5,6 +5,15 @@ import { partnerSet, personRemoved } from "../store/peopleSlice";
 import { selectAllPeople } from "../store/selectors";
 import { findPartner } from "../utils/person_utils";
 import { reject } from "lodash-es";
+import clsx from "clsx";
+
+const buttonClasses = (variant: "neutral" | "danger" = "neutral") =>
+  clsx(
+    "cursor-pointer rounded-md border px-3 py-2 text-sm",
+    variant === "danger"
+      ? "border-red-700 text-red-700 hover:bg-red-50 dark:border-red-400 dark:text-red-400 dark:hover:bg-red-950"
+      : "border-gray-700 hover:bg-gray-100 dark:border-gray-300 dark:hover:bg-gray-800",
+  );
 
 interface ListPersonProps {
   person: Person;
@@ -23,7 +32,9 @@ const ListPerson = ({ person, others, onSetPartner, onDelete }: ListPersonProps)
     >
       <div>
         <p className="font-medium">{person.name}</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{person.email}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {person.email} | {person.phone}
+        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -50,27 +61,19 @@ const ListPerson = ({ person, others, onSetPartner, onDelete }: ListPersonProps)
         {pendingDelete === true ? (
           <div className="flex items-center gap-2">
             <span className="text-sm">Delete {person.name}?</span>
-            <button
-              type="button"
-              onClick={onDelete}
-              className="cursor-pointer rounded-md border border-red-700 px-3 py-2 text-sm text-red-700 hover:bg-red-50 dark:border-red-400 dark:text-red-400 dark:hover:bg-red-950"
-            >
+            <button type="button" onClick={onDelete} className={buttonClasses("danger")}>
               Confirm
             </button>
             <button
               type="button"
               onClick={() => setPendingDelete(false)}
-              className="cursor-pointer rounded-md border border-gray-700 px-3 py-2 text-sm hover:bg-gray-100 dark:border-gray-300 dark:hover:bg-gray-800"
+              className={buttonClasses()}
             >
               Cancel
             </button>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setPendingDelete(true)}
-            className="cursor-pointer rounded-md border border-gray-700 px-3 py-2 text-sm hover:bg-gray-100 dark:border-gray-300 dark:hover:bg-gray-800"
-          >
+          <button type="button" onClick={() => setPendingDelete(true)} className={buttonClasses()}>
             Delete
           </button>
         )}

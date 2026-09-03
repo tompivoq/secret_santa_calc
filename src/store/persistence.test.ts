@@ -3,8 +3,14 @@ import { beforeEach, describe, expect, it } from "vite-plus/test";
 import type { Person } from "../models/person";
 import { loadPeople, savePeople } from "./persistence";
 
-const bjorn: Person = { id: 0, name: "Bjørn", email: "bjorn@example.com" };
-const anna: Person = { id: 1, name: "Anna", email: "anna@example.com", partnerId: 0 };
+const bjorn: Person = { id: 0, name: "Bjørn", email: "bjorn@example.com", phone: 22334455 };
+const anna: Person = {
+  id: 1,
+  name: "Anna",
+  email: "anna@example.com",
+  phone: 87654321,
+  partnerId: 0,
+};
 
 beforeEach(() => {
   localStorage.clear();

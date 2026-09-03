@@ -6,6 +6,7 @@ const makePerson = (id: number, partnerId?: number): Person => ({
   id,
   name: `Person ${id}`,
   email: `person${id}@example.com`,
+  phone: 22334455,
   partnerId,
 });
 
