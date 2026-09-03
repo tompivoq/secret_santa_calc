@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
@@ -53,7 +53,12 @@ const stubPeopleApi = () => {
             partner.partnerId = created.id;
           }
         }
-        return new Response(JSON.stringify(created), { status: 201 });
+        // The real API also returns a freshly generated initial password,
+        // shown once — kept out of `people` above since it's never part of
+        // what GET /people (or this list) returns afterwards.
+        return new Response(JSON.stringify({ ...created, initialPassword: `pw-${created.id}` }), {
+          status: 201,
+        });
       }
 
       return new Response(null, { status: 204 });
@@ -87,6 +92,10 @@ const addPerson = async (
     );
   }
   await user.click(screen.getByRole("button", { name: "Add Person" }));
+  // Adding a person shows a one-time "here's their initial password" banner
+  // that repeats the person's name — dismiss it so later assertions in this
+  // test that look up a person's name in the list stay unambiguous.
+  await user.click(await screen.findByRole("button", { name: "Dismiss" }));
 };
 
 describe("App: renders people and their partners as returned by the API", () => {
@@ -95,11 +104,17 @@ describe("App: renders people and their partners as returned by the API", () => 
     const user = userEvent.setup();
     renderApp();
 
+    // Scoped to the list, and to the row's name element specifically — a
+    // person's name legitimately also shows up as an option in every
+    // partner dropdown, including other rows' in the same list.
+    const nameInList = async (name: string) =>
+      within(await screen.findByRole("list")).findByText(name, { selector: "p.font-medium" });
+
     await addPerson(user, "Bjørn", "bjorn@example.com", "11223344");
-    await screen.findByText("Bjørn");
+    await nameInList("Bjørn");
 
     await addPerson(user, "Anna", "anna@example.com", "22334455", "Bjørn");
-    await screen.findByText("Anna");
+    await nameInList("Anna");
 
     // The form sent Bjørn's id as the partner, and the server linked both ways.
     expect(people).toEqual([

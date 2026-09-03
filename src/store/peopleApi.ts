@@ -8,6 +8,11 @@ export interface NewPerson {
   partnerId?: number | null;
 }
 
+export interface CreatedPerson extends Person {
+  /** Shown once, in the response to the create call — never retrievable afterwards. */
+  initialPassword: string;
+}
+
 export const peopleApi = createApi({
   reducerPath: "peopleApi",
   // Resolved against the current origin rather than left as a bare "/api":
@@ -24,7 +29,7 @@ export const peopleApi = createApi({
       query: () => "people",
       providesTags: ["People"],
     }),
-    addPerson: builder.mutation<Person, NewPerson>({
+    addPerson: builder.mutation<CreatedPerson, NewPerson>({
       query: (body) => ({ url: "people", method: "POST", body }),
       invalidatesTags: ["People"],
     }),

@@ -16,5 +16,9 @@ export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 export const createDb = (path = ":memory:"): Db => {
   const sqlite = new Database(path);
   sqlite.pragma("journal_mode = WAL");
+  // Off by default in SQLite. Needed for the credentials table's cascade
+  // delete (removing a person removes their login credentials too) to
+  // actually take effect rather than silently no-op.
+  sqlite.pragma("foreign_keys = ON");
   return drizzle(sqlite, { schema });
 };

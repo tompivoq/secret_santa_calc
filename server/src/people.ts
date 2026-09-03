@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { Db, Tx } from "./db/client.js";
-import { people } from "./db/schema.js";
+import { people, type PersonRow } from "./db/schema.js";
+import { createInitialCredentials } from "./auth/service.js";
 
 export const listPeople = (db: Db) => db.select().from(people).all();
 
@@ -11,12 +12,18 @@ export interface NewPerson {
   partnerId?: number | null;
 }
 
+export interface CreatedPerson extends PersonRow {
+  /** Shown once, at creation time only — not retrievable afterwards. */
+  initialPassword: string;
+}
+
 /**
- * Creates a person. If `partnerId` is given, reciprocally links that
- * partner back too (see `linkPartner` for the unlink-previous-partner
- * semantics that applies here as well).
+ * Creates a person, along with login credentials with a freshly generated
+ * initial password (see `createInitialCredentials`). If `partnerId` is
+ * given, reciprocally links that partner back too (see `linkPartner` for
+ * the unlink-previous-partner semantics that applies here as well).
  */
-export const addPerson = (db: Db, input: NewPerson) =>
+export const addPerson = (db: Db, input: NewPerson): CreatedPerson =>
   db.transaction((tx) => {
     const created = tx
       .insert(people)
@@ -24,12 +31,15 @@ export const addPerson = (db: Db, input: NewPerson) =>
       .returning()
       .get();
 
+    const initialPassword = createInitialCredentials(tx, created.id);
+
     if (input.partnerId !== undefined && input.partnerId !== null) {
       linkPartner(tx, created.id, input.partnerId);
     }
 
     // Guaranteed to exist — we just inserted it in this same transaction.
-    return tx.select().from(people).where(eq(people.id, created.id)).get()!;
+    const person = tx.select().from(people).where(eq(people.id, created.id)).get()!;
+    return { ...person, initialPassword };
   });
 
 /** Removes a person, clearing the reciprocal link on their former partner, if any. */
