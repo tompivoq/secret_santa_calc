@@ -225,7 +225,7 @@ describe("/api/people authorization", () => {
     const createRes = await app.request("/api/people", {
       method: "POST",
       headers: { "Content-Type": "application/json", cookie },
-      body: JSON.stringify({ name: "Someone", email: "someone@example.com", phone: 1 }),
+      body: JSON.stringify({ name: "Someone", email: "someone@example.com", phone: 22334455 }),
     });
     expect(createRes.status).toBe(201);
     const created = (await createRes.json()) as { id: number };
@@ -257,7 +257,7 @@ describe("POST /api/people", () => {
     const res = await app.request("/api/people", {
       method: "POST",
       headers: { "Content-Type": "application/json", cookie },
-      body: JSON.stringify({ name: "Anna Again", email: "anna@example.com", phone: 1 }),
+      body: JSON.stringify({ name: "Anna Again", email: "anna@example.com", phone: 22334455 }),
     });
 
     expect(res.status).toBe(409);

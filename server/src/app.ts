@@ -9,9 +9,9 @@ import { requireAdmin, requireAuth, type AuthVariables } from "./auth/middleware
 
 const newPersonSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email(),
-  phone: z.number().int(),
-  partnerId: z.number().int().optional().nullable(),
+  email: z.email(),
+  phone: z.int().min(10000000).max(99999999),
+  partnerId: z.int().optional().nullable(),
 });
 
 const partnerSchema = z.object({
@@ -19,7 +19,7 @@ const partnerSchema = z.object({
 });
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   password: z.string().min(1),
 });
 
