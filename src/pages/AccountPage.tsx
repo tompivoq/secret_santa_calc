@@ -1,17 +1,16 @@
-import { Navigate } from "react-router-dom";
 import { useLogoutMutation, useMeQuery } from "../store/authApi";
-import ChangePasswordForm from "../components/ChangePasswordForm";
 
+/**
+ * Reached only once RequireAuth (in App.tsx) has confirmed both that
+ * someone is logged in and that they're past the forced first-login
+ * password change — this doesn't re-check either itself.
+ */
 function AccountPage() {
-  const { data, isError, isLoading } = useMeQuery();
+  const { data } = useMeQuery();
   const [logout] = useLogoutMutation();
 
-  if (isLoading) {
-    return <p className="mt-8">Loading…</p>;
-  }
-
-  if (isError || !data) {
-    return <Navigate to="/login" replace />;
+  if (!data) {
+    return null;
   }
 
   return (
@@ -29,13 +28,9 @@ function AccountPage() {
         </button>
       </div>
 
-      {data.mustChangePassword ? (
-        <ChangePasswordForm />
-      ) : (
-        <p className="rounded-xl border border-gray-400 p-5 text-center">
-          You haven't been matched yet — check back after the draw.
-        </p>
-      )}
+      <p className="rounded-xl border border-gray-400 p-5 text-center">
+        You haven't been matched yet — check back after the draw.
+      </p>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
@@ -85,6 +85,10 @@ const stubPeopleApi = () => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  // See the identical comment in Auth.integration.test.tsx — RTL's
+  // auto-cleanup needs a global `afterEach`, which this project doesn't
+  // enable, so it never attaches without this.
+  cleanup();
 });
 
 const addPerson = async (

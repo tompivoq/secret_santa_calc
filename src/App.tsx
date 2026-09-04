@@ -1,13 +1,14 @@
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
 import LoginPage from "./pages/LoginPage";
-import AdminRoute from "./components/AdminRoute";
+import RequireAuth from "./components/RequireAuth";
 import { useMeQuery } from "./store/authApi";
 
 function App() {
-  // Also queried (and cached) inside AdminRoute/AccountPage — RTK Query
-  // dedupes identical in-flight queries, so this doesn't add a request.
+  // Also queried (and cached) inside RequireAuth/AccountPage/ChangePasswordPage
+  // — RTK Query dedupes identical in-flight queries, so this doesn't add a request.
   const { data: me } = useMeQuery();
 
   return (
@@ -31,13 +32,25 @@ function App() {
           <Route
             path="/"
             element={
-              <AdminRoute>
+              <RequireAuth adminOnly>
                 <AdminPage />
-              </AdminRoute>
+              </RequireAuth>
             }
           />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/account" element={<AccountPage />} />
+          <Route
+            path="/account"
+            element={
+              <RequireAuth>
+                <AccountPage />
+              </RequireAuth>
+            }
+          />
+          {/* Not wrapped in RequireAuth — this is where RequireAuth itself
+              redirects to while mustChangePassword is set, and it applies
+              its own (inverse) guard: nothing pending means nothing to do
+              here, so it bounces onward to /account instead. */}
+          <Route path="/change-password" element={<ChangePasswordPage />} />
         </Routes>
       </main>
     </BrowserRouter>

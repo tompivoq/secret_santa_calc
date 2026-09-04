@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
@@ -21,6 +21,8 @@ interface StubAuthApiOptions {
   person?: Person;
   /** Skip straight to a logged-in session, as if login already happened. */
   startAuthenticated?: boolean;
+  /** Whether the session starts with a pending forced password change. */
+  mustChangePassword?: boolean;
 }
 
 /**
@@ -34,8 +36,9 @@ const stubAuthApi = ({
   password = "initial-pw",
   person = PERSON,
   startAuthenticated = false,
+  mustChangePassword = true,
 }: StubAuthApiOptions = {}) => {
-  const state = { password, mustChangePassword: true, authenticated: startAuthenticated };
+  const state = { password, mustChangePassword, authenticated: startAuthenticated };
 
   vi.stubGlobal(
     "fetch",
@@ -109,6 +112,13 @@ const stubAuthApi = ({
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  // @testing-library/react's auto-cleanup only attaches when it can find
+  // `afterEach` as a global — this project deliberately doesn't enable
+  // vitest's `globals` option, so it never does. Without this, each test's
+  // rendered tree stays mounted into the next one, in the same jsdom
+  // document — harmless for tests that only look for something being
+  // present, but exactly what breaks a test asserting something is absent.
+  cleanup();
 });
 
 const renderAt = (path: string) => {
@@ -159,7 +169,7 @@ describe("logging in", () => {
 
 describe("admin access to the people-management page", () => {
   it("shows a 'no access' message to a logged-in non-admin who visits it directly", async () => {
-    stubAuthApi({ startAuthenticated: true });
+    stubAuthApi({ startAuthenticated: true, mustChangePassword: false });
     renderAt("/");
 
     await screen.findByText("You don't have access to this page.");
@@ -168,10 +178,38 @@ describe("admin access to the people-management page", () => {
 
   it("shows the page, and the nav link, to a logged-in admin", async () => {
     const admin: Person = { ...PERSON, isAdmin: true };
-    stubAuthApi({ person: admin, startAuthenticated: true });
+    stubAuthApi({ person: admin, startAuthenticated: true, mustChangePassword: false });
     renderAt("/");
 
     await screen.findByLabelText("Name");
     expect(screen.getByRole("link", { name: "Manage people" })).not.toBeNull();
+  });
+});
+
+describe("a pending forced password change blocks every other page", () => {
+  it("redirects away from the account page to the change-password form", async () => {
+    stubAuthApi({ startAuthenticated: true, mustChangePassword: true });
+    renderAt("/account");
+
+    await screen.findByText("This is your first time logging in — please set a new password.");
+    expect(
+      screen.queryByText("You haven't been matched yet — check back after the draw."),
+    ).toBeNull();
+  });
+
+  it("redirects an admin away from the people-management page to the change-password form", async () => {
+    const admin: Person = { ...PERSON, isAdmin: true };
+    stubAuthApi({ person: admin, startAuthenticated: true, mustChangePassword: true });
+    renderAt("/");
+
+    await screen.findByText("This is your first time logging in — please set a new password.");
+    expect(screen.queryByLabelText("Name")).toBeNull();
+  });
+
+  it("bounces away from the change-password page once nothing is pending", async () => {
+    stubAuthApi({ startAuthenticated: true, mustChangePassword: false });
+    renderAt("/change-password");
+
+    await screen.findByText("You haven't been matched yet — check back after the draw.");
   });
 });

@@ -1,5 +1,7 @@
 node_modules
 dist
-data/*.sqlite
-data/*.sqlite-*
+# Everything under data/ is runtime-generated (the SQLite db and its
+# -shm/-wal files, and the auto-generated auth secret — see
+# auth/secret.ts) — none of it belongs in source control.
+data/
 *.tsbuildinfo

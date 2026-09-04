@@ -14,13 +14,17 @@ const inputClasses = (hasError: boolean) =>
     hasError ? "border-red-500 dark:border-red-500" : "border-gray-300",
   );
 
-/**
- * Once submitted successfully, the `changePassword` mutation invalidates
- * the `me` query's "Session" tag, so whoever renders this (AccountPage)
- * refetches `me`, sees `mustChangePassword: false`, and swaps this form
- * out on its own — no local "done" state or navigation needed here.
- */
-function ChangePasswordForm() {
+interface ChangePasswordFormProps {
+  /**
+   * Called after the password is changed. The `changePassword` mutation
+   * also invalidates the `me` query's "Session" tag on its own, so
+   * `mustChangePassword` flips to false regardless — this is only for the
+   * caller to do something about it, e.g. navigate elsewhere.
+   */
+  onSuccess?: () => void;
+}
+
+function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps = {}) {
   const [changePassword, { isLoading }] = useChangePasswordMutation();
   const {
     register,
@@ -32,6 +36,7 @@ function ChangePasswordForm() {
   const onSubmit = async (data: FormData) => {
     try {
       await changePassword(data).unwrap();
+      onSuccess?.();
     } catch {
       setError("root", { message: "Current password is incorrect" });
     }
