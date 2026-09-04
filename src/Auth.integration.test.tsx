@@ -211,6 +211,30 @@ describe("logging in", () => {
   });
 });
 
+describe("logging out", () => {
+  it("hides the nav's links and signed-in info, not just the page content", async () => {
+    stubAuthApi({ startAuthenticated: true, mustChangePassword: false });
+    const user = userEvent.setup();
+    renderAt("/account");
+
+    await screen.findByText("You haven't been matched yet — check back after the draw.");
+    expect(screen.getByRole("link", { name: "My account" })).not.toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Log out" }));
+
+    // Redirected to the login page...
+    await screen.findByLabelText("Email");
+    // ...and the nav bar — which stays mounted across route changes,
+    // unlike the page content it wraps — no longer shows the signed-in
+    // links either. Before the fix, TopBarNav kept rendering them because
+    // it only checked `me !== undefined`: RTK Query keeps the last
+    // successful `data` around even once the invalidated "me" query's
+    // refetch errors, so `me` alone stayed truthy after logout.
+    expect(screen.queryByRole("link", { name: "My account" })).toBeNull();
+    expect(screen.queryByText(/Signed in as/)).toBeNull();
+  });
+});
+
 describe("admin access to the people-management page", () => {
   it("shows a 'no access' message to a logged-in non-admin who visits it directly", async () => {
     stubAuthApi({ startAuthenticated: true, mustChangePassword: false });
