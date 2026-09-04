@@ -1,21 +1,30 @@
-import { sqliteTable, integer, text } from "drizzle-orm/sqlite-core";
+import { sql, SQL } from "drizzle-orm";
+import { sqliteTable, integer, text, uniqueIndex, AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 
-export const people = sqliteTable("people", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
-  // Unique because login looks a person up by email — see credentials below.
-  email: text("email").notNull().unique(),
-  phone: integer("phone").notNull(),
-  // Self-referential: the id of this person's partner, if any. Not declared
-  // as a DB-level foreign key (SQLite self-references add friction for
-  // little benefit at this scale) — reciprocity and validity are enforced
-  // in the people service instead.
-  partnerId: integer("partner_id"),
-  // Gates access to the people-management API (list/create/delete/partner)
-  // — see auth/middleware.ts. Not settable through the app itself; granted
-  // out-of-band via the set-admin script (server/src/scripts/set-admin.ts).
-  isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
-});
+export function lower(email: AnySQLiteColumn): SQL {
+  return sql`lower(${email})`;
+}
+
+export const people = sqliteTable(
+  "people",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    // Unique because login looks a person up by email — see credentials below.
+    email: text("email").notNull().unique(),
+    phone: integer("phone").notNull(),
+    // Self-referential: the id of this person's partner, if any. Not declared
+    // as a DB-level foreign key (SQLite self-references add friction for
+    // little benefit at this scale) — reciprocity and validity are enforced
+    // in the people service instead.
+    partnerId: integer("partner_id"),
+    // Gates access to the people-management API (list/create/delete/partner)
+    // — see auth/middleware.ts. Not settable through the app itself; granted
+    // out-of-band via the set-admin script (server/src/scripts/set-admin.ts).
+    isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
+  },
+  (table) => [uniqueIndex("emailUniqueIndex").on(lower(table.email))],
+);
 
 export type PersonRow = typeof people.$inferSelect;
 export type NewPersonRow = typeof people.$inferInsert;

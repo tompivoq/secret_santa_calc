@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { Db, Tx } from "../db/client.js";
-import { credentials, people, type PersonRow } from "../db/schema.js";
+import { credentials, lower, people, type PersonRow } from "../db/schema.js";
 import { generateInitialPassword, hashPassword, verifyPassword } from "./password.js";
 
 /**
@@ -28,7 +28,11 @@ export interface LoginResult {
 
 /** Verifies an email/password pair. Returns null on any mismatch (unknown email, wrong password, no credentials set up). */
 export const login = (db: Db, email: string, password: string): LoginResult | null => {
-  const person = db.select().from(people).where(eq(people.email, email)).get();
+  const person = db
+    .select()
+    .from(people)
+    .where(eq(lower(people.email), email.toLowerCase()))
+    .get();
   if (!person) {
     return null;
   }

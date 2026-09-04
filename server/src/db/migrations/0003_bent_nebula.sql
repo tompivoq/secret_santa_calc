@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `emailUniqueIndex` ON `people` (lower("email"));

@@ -42,6 +42,13 @@ describe("addPerson", () => {
       addPerson(db, { name: "Anna Again", email: "anna@example.com", phone: 1 }),
     ).toThrow();
   });
+
+  it("rejects a duplicate email that only differs by case", () => {
+    seed("Anna");
+    expect(() =>
+      addPerson(db, { name: "Anna Again", email: "Anna@Example.com", phone: 1 }),
+    ).toThrow();
+  });
 });
 
 describe("login", () => {
@@ -57,6 +64,12 @@ describe("login", () => {
   it("fails with the wrong password", () => {
     seed("Anna");
     expect(login(db, "anna@example.com", "not the password")).toBeNull();
+  });
+
+  it("matches the email case-insensitively", () => {
+    const anna = seed("Anna");
+    const result = login(db, "Anna@Example.com", anna.initialPassword);
+    expect(result?.person.id).toBe(anna.id);
   });
 
   it("fails for an email that doesn't exist", () => {
