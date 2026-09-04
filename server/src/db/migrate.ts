@@ -6,6 +6,6 @@ export const migrationsFolder = fileURLToPath(new URL("./migrations", import.met
 
 /** Applies any pending migrations. Safe to run on every server startup — a no-op once caught up. */
 export const runMigrations = (dbPath: string): void => {
-  const db = createDb(dbPath);
-  migrate(db, { migrationsFolder });
+	const db = createDb(dbPath);
+	migrate(db, { migrationsFolder });
 };

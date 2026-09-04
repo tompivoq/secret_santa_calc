@@ -10,17 +10,17 @@ import { dirname, join } from "node:path";
  * file) on every deployment.
  */
 export const getOrCreateAuthSecret = (dbPath: string): string => {
-  if (process.env.AUTH_SECRET) {
-    return process.env.AUTH_SECRET;
-  }
+	if (process.env.AUTH_SECRET) {
+		return process.env.AUTH_SECRET;
+	}
 
-  const secretPath = join(dirname(dbPath), "auth_secret");
-  if (existsSync(secretPath)) {
-    return readFileSync(secretPath, "utf-8").trim();
-  }
+	const secretPath = join(dirname(dbPath), "auth_secret");
+	if (existsSync(secretPath)) {
+		return readFileSync(secretPath, "utf-8").trim();
+	}
 
-  const secret = randomBytes(32).toString("hex");
-  mkdirSync(dirname(secretPath), { recursive: true });
-  writeFileSync(secretPath, secret, { mode: 0o600 });
-  return secret;
+	const secret = randomBytes(32).toString("hex");
+	mkdirSync(dirname(secretPath), { recursive: true });
+	writeFileSync(secretPath, secret, { mode: 0o600 });
+	return secret;
 };

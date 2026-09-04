@@ -1,3 +1,3 @@
 export interface AuthVariables {
-  personId: number;
+	personId: number;
 }

@@ -20,25 +20,25 @@ export const DEV_ADMIN_PASSWORD = "devpassword";
  * seeded false — the whole point is a password that's always the same.
  */
 export const seedDevAdmin = (db: Db): void => {
-  let admin = db.select().from(people).where(eq(people.email, DEV_ADMIN_EMAIL)).get();
+	let admin = db.select().from(people).where(eq(people.email, DEV_ADMIN_EMAIL)).get();
 
-  if (!admin) {
-    admin = db.transaction((tx) => {
-      const created = tx
-        .insert(people)
-        .values({ name: "Dev Admin", email: DEV_ADMIN_EMAIL, phone: 12345678, isAdmin: true })
-        .returning()
-        .get();
-      tx.insert(credentials)
-        .values({
-          personId: created.id,
-          passwordHash: hashPassword(DEV_ADMIN_PASSWORD),
-          mustChangePassword: false,
-        })
-        .run();
-      return created;
-    });
-  }
+	if (!admin) {
+		admin = db.transaction((tx) => {
+			const created = tx
+				.insert(people)
+				.values({ name: "Dev Admin", email: DEV_ADMIN_EMAIL, phone: 12345678, isAdmin: true })
+				.returning()
+				.get();
+			tx.insert(credentials)
+				.values({
+					personId: created.id,
+					passwordHash: hashPassword(DEV_ADMIN_PASSWORD),
+					mustChangePassword: false,
+				})
+				.run();
+			return created;
+		});
+	}
 
-  console.log(`[dev] admin login: ${DEV_ADMIN_EMAIL} / ${DEV_ADMIN_PASSWORD}`);
+	console.log(`[dev] admin login: ${DEV_ADMIN_EMAIL} / ${DEV_ADMIN_PASSWORD}`);
 };

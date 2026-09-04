@@ -8,14 +8,14 @@ import { authApi } from "./authApi";
  * tests.
  */
 export const createStore = () =>
-  configureStore({
-    reducer: {
-      [peopleApi.reducerPath]: peopleApi.reducer,
-      [authApi.reducerPath]: authApi.reducer,
-    },
-    middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().concat(peopleApi.middleware, authApi.middleware),
-  });
+	configureStore({
+		reducer: {
+			[peopleApi.reducerPath]: peopleApi.reducer,
+			[authApi.reducerPath]: authApi.reducer,
+		},
+		middleware: (getDefaultMiddleware) =>
+			getDefaultMiddleware().concat(peopleApi.middleware, authApi.middleware),
+	});
 
 export const store = createStore();
 

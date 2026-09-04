@@ -6,19 +6,19 @@ import { useMeQuery } from "../store/authApi";
  * password change — this doesn't re-check either itself.
  */
 function AccountPage() {
-  const { data } = useMeQuery();
+	const { data } = useMeQuery();
 
-  if (!data) {
-    return null;
-  }
+	if (!data) {
+		return null;
+	}
 
-  return (
-    <div className="mt-8 flex flex-col items-stretch gap-4 text-left">
-      <p className="rounded-xl border border-gray-400 p-5 text-center">
-        You haven't been matched yet — check back after the draw.
-      </p>
-    </div>
-  );
+	return (
+		<div className="mt-8 flex flex-col items-stretch gap-4 text-left">
+			<p className="rounded-xl border border-gray-400 p-5 text-center">
+				You haven't been matched yet — check back after the draw.
+			</p>
+		</div>
+	);
 }
 
 export default AccountPage;

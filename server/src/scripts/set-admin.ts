@@ -18,8 +18,8 @@ import { people } from "../db/schema.js";
 const [, , email, flag] = process.argv;
 
 if (!email) {
-  console.error("Usage: set-admin.ts <email> [false]");
-  process.exit(1);
+	console.error("Usage: set-admin.ts <email> [false]");
+	process.exit(1);
 }
 
 const isAdmin = flag !== "false";
@@ -29,8 +29,8 @@ const db = createDb(dbPath);
 const result = db.update(people).set({ isAdmin }).where(eq(people.email, email)).run();
 
 if (result.changes === 0) {
-  console.error(`No person found with email ${email}`);
-  process.exit(1);
+	console.error(`No person found with email ${email}`);
+	process.exit(1);
 }
 
 console.log(`${email} is now ${isAdmin ? "an admin" : "not an admin"}.`);
