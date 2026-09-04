@@ -9,7 +9,7 @@ import { TopBarNav } from "./components/TopBarNav";
 function App() {
   return (
     <BrowserRouter>
-    <TopBarNav />
+      <TopBarNav />
       <main className="mx-auto max-w-2xl px-6 pb-12 text-center">
         <Routes>
           <Route

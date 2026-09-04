@@ -19,35 +19,35 @@ export const TopBarNav = () => {
         <h1 className="text-center text-3xl font-medium text-gray-900 dark:text-gray-100">
           Secret Santa Calculator
         </h1>
-          <nav className="my-4 flex w-full items-start align-middle text-lg">
-            {isSignedIn && (
+        <nav className="my-4 flex w-full items-start align-middle text-lg">
+          {isSignedIn && (
             <>
-                <div className="flex-1" />
-                <div id="page_nav" className="flex gap-4 self-center-safe">
+              <div className="flex-1" />
+              <div id="page_nav" className="flex gap-4 self-center-safe">
                 {me.person.isAdmin && (
-                    <Link to="/" className="underline hover:no-underline">
+                  <Link to="/" className="underline hover:no-underline">
                     Manage people
-                    </Link>
+                  </Link>
                 )}
                 <Link to="/account" className="underline hover:no-underline">
-                    My account
+                  My account
                 </Link>
-                </div>
-                <div id="user" className="flex flex-1 flex-col items-center self-end-safe px-2">
+              </div>
+              <div id="user" className="flex flex-1 flex-col items-center self-end-safe px-2">
                 <p className="text-sm">
-                    Signed in as <span className="font-semibold">{me.person.name}</span>
+                  Signed in as <span className="font-semibold">{me.person.name}</span>
                 </p>
                 <button
-                    type="button"
-                    onClick={() => logout()}
-                    className="w-fit cursor-pointer rounded-md border border-gray-700 px-3 py-1.5 text-sm hover:bg-gray-100 dark:border-gray-300 dark:hover:bg-gray-800"
+                  type="button"
+                  onClick={() => logout()}
+                  className="w-fit cursor-pointer rounded-md border border-gray-700 px-3 py-1.5 text-sm hover:bg-gray-100 dark:border-gray-300 dark:hover:bg-gray-800"
                 >
-                    Log out
+                  Log out
                 </button>
-                </div>
-            </>  
-            )}
-          </nav>
+              </div>
+            </>
+          )}
+        </nav>
       </div>
     </div>
   );
