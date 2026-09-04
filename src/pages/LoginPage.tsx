@@ -1,7 +1,9 @@
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import clsx from "clsx";
-import { useLoginMutation } from "../store/authApi";
+import { authApi, useLoginMutation } from "../store/authApi";
+import type { AppDispatch } from "../store/store";
 
 interface FormData {
   email: string;
@@ -16,6 +18,7 @@ const inputClasses = (hasError: boolean) =>
 
 function LoginPage() {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
   const [login, { isLoading }] = useLoginMutation();
   const {
     register,
@@ -26,7 +29,20 @@ function LoginPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      await login(data).unwrap();
+      const result = await login(data).unwrap();
+      // The login mutation also invalidates the "me" query's cache tag, but
+      // that refetch is async and not guaranteed to land before the
+      // navigate() below — without this, RequireAuth on /account could
+      // still read the stale pre-login 401 for a moment and bounce straight
+      // back to /login right after a successful login. Seeding it directly
+      // from this response (same shape as /me's) makes the ordering exact
+      // instead of racing the refetch.
+      dispatch(
+        authApi.util.upsertQueryData("me", undefined, {
+          person: result.person,
+          mustChangePassword: result.mustChangePassword,
+        }),
+      );
       navigate("/account");
     } catch {
       setError("root", { message: "Incorrect email or password" });

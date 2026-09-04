@@ -165,6 +165,50 @@ describe("logging in", () => {
 
     await screen.findByText("Incorrect email or password");
   });
+
+  it("does not bounce back to /login while the invalidated me-query is still refetching", async () => {
+    // A GET /api/auth/me that never resolves, standing in for a refetch
+    // that's simply slow — the account page must render from what login()
+    // already returned, not wait on (or read stale data from) this.
+    let meCalls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const request = input instanceof Request ? input : new Request(input, init);
+        const url = new URL(request.url);
+
+        if (url.pathname === "/api/auth/login" && request.method === "POST") {
+          return new Response(JSON.stringify({ person: PERSON, mustChangePassword: false }), {
+            status: 200,
+          });
+        }
+
+        if (url.pathname === "/api/auth/me" && request.method === "GET") {
+          meCalls += 1;
+          // The pre-login check on mount: genuinely not authenticated yet.
+          if (meCalls === 1) {
+            return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 });
+          }
+          // The post-login, invalidation-triggered refetch: hangs forever.
+          return new Promise<Response>(() => {});
+        }
+
+        return new Response(null, { status: 204 });
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderAt("/login");
+
+    await user.type(screen.getByLabelText("Email"), PERSON.email);
+    await user.type(screen.getByLabelText("Password"), "whatever");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    // Without the fix, RequireAuth would instead read the still-cached
+    // pre-login 401 (the me-query refetch above never settles to replace
+    // it) and redirect straight back to /login.
+    await screen.findByText("You haven't been matched yet — check back after the draw.");
+  });
 });
 
 describe("admin access to the people-management page", () => {
@@ -210,6 +254,53 @@ describe("a pending forced password change blocks every other page", () => {
     stubAuthApi({ startAuthenticated: true, mustChangePassword: false });
     renderAt("/change-password");
 
+    await screen.findByText("You haven't been matched yet — check back after the draw.");
+  });
+
+  it("does not bounce back to /change-password while the invalidated me-query is still refetching", async () => {
+    // Same race as the login one above, on the change-password → /account
+    // hop instead: a GET /api/auth/me that never resolves after the
+    // password is changed, standing in for a refetch that's simply slow.
+    let meCalls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const request = input instanceof Request ? input : new Request(input, init);
+        const url = new URL(request.url);
+
+        if (url.pathname === "/api/auth/me" && request.method === "GET") {
+          meCalls += 1;
+          // The mount check, before the password is changed.
+          if (meCalls === 1) {
+            return new Response(JSON.stringify({ person: PERSON, mustChangePassword: true }), {
+              status: 200,
+            });
+          }
+          // The post-change-password, invalidation-triggered refetch: hangs forever.
+          return new Promise<Response>(() => {});
+        }
+
+        if (url.pathname === "/api/auth/change-password" && request.method === "POST") {
+          return new Response(null, { status: 204 });
+        }
+
+        return new Response(null, { status: 204 });
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderAt("/change-password");
+
+    await screen.findByText("This is your first time logging in — please set a new password.");
+
+    await user.type(screen.getByLabelText("Current password"), "initial-pw");
+    await user.type(screen.getByLabelText("New password"), "a-brand-new-password");
+    await user.type(screen.getByLabelText("Confirm new password"), "a-brand-new-password");
+    await user.click(screen.getByRole("button", { name: "Set password" }));
+
+    // Without the fix, RequireAuth would instead read the still-cached
+    // mustChangePassword: true (the me-query refetch above never settles
+    // to replace it) and redirect straight back to /change-password.
     await screen.findByText("You haven't been matched yet — check back after the draw.");
   });
 });

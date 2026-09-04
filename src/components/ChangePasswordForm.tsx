@@ -1,6 +1,8 @@
 import { useForm } from "react-hook-form";
+import { useDispatch } from "react-redux";
 import clsx from "clsx";
-import { useChangePasswordMutation } from "../store/authApi";
+import { authApi, useChangePasswordMutation } from "../store/authApi";
+import type { AppDispatch } from "../store/store";
 
 interface FormData {
   currentPassword: string;
@@ -15,16 +17,12 @@ const inputClasses = (hasError: boolean) =>
   );
 
 interface ChangePasswordFormProps {
-  /**
-   * Called after the password is changed. The `changePassword` mutation
-   * also invalidates the `me` query's "Session" tag on its own, so
-   * `mustChangePassword` flips to false regardless — this is only for the
-   * caller to do something about it, e.g. navigate elsewhere.
-   */
+  /** Called after the password is changed and the "me" cache (see below) has been updated. */
   onSuccess?: () => void;
 }
 
 function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps = {}) {
+  const dispatch = useDispatch<AppDispatch>();
   const [changePassword, { isLoading }] = useChangePasswordMutation();
   const {
     register,
@@ -36,6 +34,19 @@ function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps = {}) {
   const onSubmit = async (data: FormData) => {
     try {
       await changePassword(data).unwrap();
+      // The mutation also invalidates the "me" query's cache tag, but that
+      // refetch is async and not guaranteed to land before onSuccess (e.g.
+      // ChangePasswordPage's navigate("/account")) runs — without this,
+      // RequireAuth on /account could still read the stale
+      // mustChangePassword: true for a moment and bounce straight back
+      // here. The response itself carries no body to seed a fresh value
+      // from (204), so patch the one field that's guaranteed to have
+      // changed instead of replacing the whole cached value.
+      dispatch(
+        authApi.util.updateQueryData("me", undefined, (draft) => {
+          draft.mustChangePassword = false;
+        }),
+      );
       onSuccess?.();
     } catch {
       setError("root", { message: "Current password is incorrect" });
