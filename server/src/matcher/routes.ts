@@ -29,5 +29,8 @@ export const getRoutes = (db: Db, authSecret: string) =>
 			const matched = doMatching(
 				people.map((person) => ({ ...person, hasMatch: false, currentTarget: null })),
 			);
+			if (!matched) {
+				return c.json({ error: "No valid matching exists for this group" }, 422);
+			}
 			return c.json(matched);
 		});

@@ -5,7 +5,7 @@ import { createApp } from "../app.js";
 import { createDb, type Db } from "../db/client.js";
 import { migrationsFolder } from "../db/migrate.js";
 import { people } from "../db/schema.js";
-import { addPerson, type CreatedPerson } from "../people/people.js";
+import { addPerson, setPartner, type CreatedPerson } from "../people/people.js";
 
 let db: Db;
 let app: ReturnType<typeof createApp>;
@@ -91,5 +91,18 @@ describe("POST /api/matcher", () => {
 		const cookie = await asAdmin();
 		const res = await postMatch([], cookie);
 		expect(res.status).toBe(400);
+	});
+
+	it("returns 422 when no valid matching exists for the given group", async () => {
+		const cookie = await asAdmin();
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+		setPartner(db, anna.id, bjorn.id);
+
+		// The only two people given are each other's only possible recipient
+		// and each other's partner — no valid assignment exists.
+		const res = await postMatch([anna.id, bjorn.id], cookie);
+
+		expect(res.status).toBe(422);
 	});
 });
