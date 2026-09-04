@@ -43,16 +43,33 @@ password change.
 
 ## Development
 
-Run the frontend and backend in two terminals:
+Install dependencies in both projects once:
+
+```bash
+npm install
+cd server && npm install && cd ..
+```
+
+Then start both with a single command:
+
+```bash
+npm run dev:all
+```
+
+This runs the frontend (`http://localhost:5173`, proxying `/api` to the
+backend) and the backend (`http://localhost:3001`) together, with each
+line prefixed `[frontend]`/`[backend]`; `Ctrl-C` stops both.
+
+To run them separately instead — useful if you want each one's output in
+its own terminal — `npm run dev` in each project does the same thing
+`dev:all` runs under the hood:
 
 ```bash
 # Terminal 1 — backend API on http://localhost:3001
 cd server
-npm install
 npm run dev
 
 # Terminal 2 — frontend dev server; proxies /api to the backend above
-npm install
 npm run dev
 ```
 
