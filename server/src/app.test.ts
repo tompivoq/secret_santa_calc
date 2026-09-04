@@ -263,3 +263,26 @@ describe("POST /api/people", () => {
     expect(res.status).toBe(409);
   });
 });
+
+describe("CORS", () => {
+  it("grants no cross-origin access — no Access-Control-* headers on any response", async () => {
+    // A third-party page sending its own Origin header and asking (via a
+    // preflight) whether it may make a credentialed request.
+    const preflight = await app.request("/api/people", {
+      method: "OPTIONS",
+      headers: {
+        origin: "https://evil.example",
+        "access-control-request-method": "GET",
+      },
+    });
+    expect(preflight.headers.get("access-control-allow-origin")).toBeNull();
+    expect(preflight.headers.get("access-control-allow-credentials")).toBeNull();
+
+    // And an actual cross-origin request — Access-Control-Allow-Origin
+    // being reflected (or set at all) is what would let the browser hand
+    // the response body back to that page's JS instead of blocking it.
+    const res = await app.request("/api/people", { headers: { origin: "https://evil.example" } });
+    expect(res.headers.get("access-control-allow-origin")).toBeNull();
+    expect(res.headers.get("access-control-allow-credentials")).toBeNull();
+  });
+});

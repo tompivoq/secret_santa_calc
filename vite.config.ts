@@ -27,5 +27,8 @@ export default defineConfig({
   // Oxfmt configuration.
   fmt: {
     sortTailwindcss: true,
+    // Claude Code owns the formatting of its own settings file; don't
+    // fight it by reformatting there too.
+    ignorePatterns: [".claude/settings.json"],
   },
 });

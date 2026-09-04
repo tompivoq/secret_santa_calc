@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { cors } from "hono/cors";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import type { Db } from "./db/client.js";
@@ -37,7 +36,14 @@ const isUniqueConstraintError = (err: unknown): boolean =>
 export const createApp = (db: Db, authSecret: string) => {
   const app = new Hono<{ Variables: AuthVariables }>();
 
-  app.use("*", cors({ origin: (origin) => origin, credentials: true }));
+  // Deliberately no CORS grant: the frontend never needs one. In dev,
+  // Vite's own proxy (see vite.config.ts) forwards /api server-side, so the
+  // browser only ever talks to the Vite origin. In production, nginx
+  // serves the frontend and proxies /api from the same origin. Every
+  // legitimate request the browser makes is therefore same-origin already,
+  // and the browser's default same-origin policy is exactly what should
+  // block anyone else's page from reading these (cookie-authenticated)
+  // responses — a permissive CORS policy here would hand that back out.
 
   // Seeing or editing the full list of people — including everyone's
   // email, phone, and (at creation time) their plaintext initial password
