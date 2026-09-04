@@ -12,35 +12,35 @@ import { useMeQuery } from "../store/authApi";
  * markup some other way (e.g. the back button, a stale tab, a bookmark).
  */
 function RequireAuth({
-  children,
-  adminOnly = false,
+	children,
+	adminOnly = false,
 }: {
-  children: ReactNode;
-  adminOnly?: boolean;
+	children: ReactNode;
+	adminOnly?: boolean;
 }) {
-  const { data, isLoading, isError } = useMeQuery();
+	const { data, isLoading, isError } = useMeQuery();
 
-  if (isLoading) {
-    return <p className="mt-8">Loading…</p>;
-  }
+	if (isLoading) {
+		return <p className="mt-8">Loading…</p>;
+	}
 
-  if (isError || !data) {
-    return <Navigate to="/login" replace />;
-  }
+	if (isError || !data) {
+		return <Navigate to="/login" replace />;
+	}
 
-  if (data.mustChangePassword) {
-    return <Navigate to="/change-password" replace />;
-  }
+	if (data.mustChangePassword) {
+		return <Navigate to="/change-password" replace />;
+	}
 
-  if (adminOnly && !data.person.isAdmin) {
-    return (
-      <p className="mt-8 rounded-xl border border-gray-400 p-5 text-center">
-        You don't have access to this page.
-      </p>
-    );
-  }
+	if (adminOnly && !data.person.isAdmin) {
+		return (
+			<p className="mt-8 rounded-xl border border-gray-400 p-5 text-center">
+				You don't have access to this page.
+			</p>
+		);
+	}
 
-  return <>{children}</>;
+	return <>{children}</>;
 }
 
 export default RequireAuth;

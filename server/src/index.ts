@@ -17,11 +17,11 @@ const authSecret = getOrCreateAuthSecret(dbPath);
 // this is the one thing standing between a known, fixed admin password
 // and it ever existing anywhere but a local dev database.
 if (process.env.NODE_ENV !== "production") {
-  seedDevAdmin(db);
+	seedDevAdmin(db);
 }
 
 const app = createApp(db, authSecret);
 
 serve({ fetch: app.fetch, port }, (info) => {
-  console.log(`secret_santa_calc API listening on http://localhost:${info.port} (db: ${dbPath})`);
+	console.log(`secret_santa_calc API listening on http://localhost:${info.port} (db: ${dbPath})`);
 });

@@ -10,26 +10,26 @@ import ChangePasswordForm from "../components/ChangePasswordForm";
  * here, so bounce onward to /account instead.
  */
 function ChangePasswordPage() {
-  const { data, isLoading, isError } = useMeQuery();
-  const navigate = useNavigate();
+	const { data, isLoading, isError } = useMeQuery();
+	const navigate = useNavigate();
 
-  if (isLoading) {
-    return <p className="mt-8">Loading…</p>;
-  }
+	if (isLoading) {
+		return <p className="mt-8">Loading…</p>;
+	}
 
-  if (isError || !data) {
-    return <Navigate to="/login" replace />;
-  }
+	if (isError || !data) {
+		return <Navigate to="/login" replace />;
+	}
 
-  if (!data.mustChangePassword) {
-    return <Navigate to="/account" replace />;
-  }
+	if (!data.mustChangePassword) {
+		return <Navigate to="/account" replace />;
+	}
 
-  return (
-    <div className="mt-8">
-      <ChangePasswordForm onSuccess={() => navigate("/account")} />
-    </div>
-  );
+	return (
+		<div className="mt-8">
+			<ChangePasswordForm onSuccess={() => navigate("/account")} />
+		</div>
+	);
 }
 
 export default ChangePasswordPage;

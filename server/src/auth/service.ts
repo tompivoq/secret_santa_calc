@@ -10,45 +10,45 @@ import { generateInitialPassword, hashPassword, verifyPassword } from "./passwor
  * whoever is setting the person up right now.
  */
 export const createInitialCredentials = (tx: Tx, personId: number): string => {
-  const initialPassword = generateInitialPassword();
-  tx.insert(credentials)
-    .values({
-      personId,
-      passwordHash: hashPassword(initialPassword),
-      mustChangePassword: true,
-    })
-    .run();
-  return initialPassword;
+	const initialPassword = generateInitialPassword();
+	tx.insert(credentials)
+		.values({
+			personId,
+			passwordHash: hashPassword(initialPassword),
+			mustChangePassword: true,
+		})
+		.run();
+	return initialPassword;
 };
 
 export interface LoginResult {
-  person: PersonRow;
-  mustChangePassword: boolean;
+	person: PersonRow;
+	mustChangePassword: boolean;
 }
 
 /** Verifies an email/password pair. Returns null on any mismatch (unknown email, wrong password, no credentials set up). */
 export const login = (db: Db, email: string, password: string): LoginResult | null => {
-  const person = db
-    .select()
-    .from(people)
-    .where(eq(lower(people.email), email.toLowerCase()))
-    .get();
-  if (!person) {
-    return null;
-  }
+	const person = db
+		.select()
+		.from(people)
+		.where(eq(lower(people.email), email.toLowerCase()))
+		.get();
+	if (!person) {
+		return null;
+	}
 
-  const creds = db.select().from(credentials).where(eq(credentials.personId, person.id)).get();
-  if (!creds || !verifyPassword(password, creds.passwordHash)) {
-    return null;
-  }
+	const creds = db.select().from(credentials).where(eq(credentials.personId, person.id)).get();
+	if (!creds || !verifyPassword(password, creds.passwordHash)) {
+		return null;
+	}
 
-  return { person, mustChangePassword: creds.mustChangePassword };
+	return { person, mustChangePassword: creds.mustChangePassword };
 };
 
 /** Whether a person still needs to replace their initial password. False if they have no credentials at all. */
 export const getMustChangePassword = (db: Db, personId: number): boolean => {
-  const creds = db.select().from(credentials).where(eq(credentials.personId, personId)).get();
-  return creds?.mustChangePassword ?? false;
+	const creds = db.select().from(credentials).where(eq(credentials.personId, personId)).get();
+	return creds?.mustChangePassword ?? false;
 };
 
 /**
@@ -59,19 +59,19 @@ export const getMustChangePassword = (db: Db, personId: number): boolean => {
  * current password given doesn't match.
  */
 export const changePassword = (
-  db: Db,
-  personId: number,
-  currentPassword: string,
-  newPassword: string,
+	db: Db,
+	personId: number,
+	currentPassword: string,
+	newPassword: string,
 ): boolean => {
-  const creds = db.select().from(credentials).where(eq(credentials.personId, personId)).get();
-  if (!creds || !verifyPassword(currentPassword, creds.passwordHash)) {
-    return false;
-  }
+	const creds = db.select().from(credentials).where(eq(credentials.personId, personId)).get();
+	if (!creds || !verifyPassword(currentPassword, creds.passwordHash)) {
+		return false;
+	}
 
-  db.update(credentials)
-    .set({ passwordHash: hashPassword(newPassword), mustChangePassword: false })
-    .where(eq(credentials.personId, personId))
-    .run();
-  return true;
+	db.update(credentials)
+		.set({ passwordHash: hashPassword(newPassword), mustChangePassword: false })
+		.where(eq(credentials.personId, personId))
+		.run();
+	return true;
 };

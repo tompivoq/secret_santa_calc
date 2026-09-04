@@ -1,52 +1,52 @@
 {
-  "name": "secret_santa_calc",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "vp dev",
-    "dev:all": "concurrently -k -n frontend,backend -c blue,green \"npm run dev\" \"npm run dev --prefix server\"",
-    "build": "tsc -b && vp build",
-    "lint": "vp lint",
-    "check": "vp check",
-    "preview": "vp preview",
-    "test": "vp test run",
-    "test:watch": "vp test"
-  },
-  "dependencies": {
-    "@reduxjs/toolkit": "^2.12.0",
-    "clsx": "^2.1.1",
-    "lodash-es": "^4.18.1",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-hook-form": "^7.87.0",
-    "react-redux": "^9.3.0",
-    "react-router-dom": "^7.18.3"
-  },
-  "devDependencies": {
-    "@tailwindcss/vite": "^4.3.3",
-    "@testing-library/react": "^16.3.3",
-    "@testing-library/user-event": "^14.6.7",
-    "@types/lodash-es": "^4.17.12",
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.1.0",
-    "concurrently": "^10.0.5",
-    "jsdom": "^30.0.1",
-    "tailwindcss": "^4.3.3",
-    "typescript": "~6.0.2",
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.0",
-    "vite-plus": "0.3.0"
-  },
-  "overrides": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.3.0"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "npm",
-      "version": "12.0.2",
-      "onFail": "download"
-    }
-  }
+	"name": "secret_santa_calc",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vp dev",
+		"dev:all": "concurrently -k -n frontend,backend -c blue,green \"npm run dev\" \"npm run dev --prefix server\"",
+		"build": "tsc -b && vp build",
+		"lint": "vp lint",
+		"check": "vp check",
+		"preview": "vp preview",
+		"test": "vp test run",
+		"test:watch": "vp test"
+	},
+	"dependencies": {
+		"@reduxjs/toolkit": "^2.12.0",
+		"clsx": "^2.1.1",
+		"lodash-es": "^4.18.1",
+		"react": "^19.2.8",
+		"react-dom": "^19.2.8",
+		"react-hook-form": "^7.87.0",
+		"react-redux": "^9.3.0",
+		"react-router-dom": "^7.18.3"
+	},
+	"devDependencies": {
+		"@tailwindcss/vite": "^4.3.3",
+		"@testing-library/react": "^16.3.3",
+		"@testing-library/user-event": "^14.6.7",
+		"@types/lodash-es": "^4.17.12",
+		"@types/node": "^24.13.3",
+		"@types/react": "^19.2.18",
+		"@types/react-dom": "^19.2.4",
+		"@vitejs/plugin-react": "^6.1.0",
+		"concurrently": "^10.0.5",
+		"jsdom": "^30.0.1",
+		"tailwindcss": "^4.3.3",
+		"typescript": "~6.0.2",
+		"vite": "npm:@voidzero-dev/vite-plus-core@0.3.0",
+		"vite-plus": "0.3.0"
+	},
+	"overrides": {
+		"vite": "npm:@voidzero-dev/vite-plus-core@0.3.0"
+	},
+	"devEngines": {
+		"packageManager": {
+			"name": "npm",
+			"version": "12.0.2",
+			"onFail": "download"
+		}
+	}
 }
