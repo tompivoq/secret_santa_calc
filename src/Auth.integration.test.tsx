@@ -2,12 +2,26 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
-import { afterEach, describe, it, vi } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import App from "./App";
 import { createStore } from "./store/store";
 import type { Person } from "./models/person";
 
-const PERSON: Person = { id: 1, name: "Bjørn", email: "bjorn@example.com", phone: 11223344 };
+const PERSON: Person = {
+  id: 1,
+  name: "Bjørn",
+  email: "bjorn@example.com",
+  phone: 11223344,
+  isAdmin: false,
+};
+
+interface StubAuthApiOptions {
+  password?: string;
+  /** The person this session belongs to — swap in an admin PERSON to test the admin-gated page. */
+  person?: Person;
+  /** Skip straight to a logged-in session, as if login already happened. */
+  startAuthenticated?: boolean;
+}
 
 /**
  * Stubs `fetch` with a small stateful fake of the auth API: one seeded
@@ -16,8 +30,12 @@ const PERSON: Person = { id: 1, name: "Bjørn", email: "bjorn@example.com", phon
  * handling isn't exercised here — that's covered by the server's own tests
  * against the real HTTP layer).
  */
-const stubAuthApi = (initialPassword = "initial-pw") => {
-  const state = { password: initialPassword, mustChangePassword: true, authenticated: false };
+const stubAuthApi = ({
+  password = "initial-pw",
+  person = PERSON,
+  startAuthenticated = false,
+}: StubAuthApiOptions = {}) => {
+  const state = { password, mustChangePassword: true, authenticated: startAuthenticated };
 
   vi.stubGlobal(
     "fetch",
@@ -26,15 +44,18 @@ const stubAuthApi = (initialPassword = "initial-pw") => {
       const url = new URL(request.url);
 
       if (url.pathname === "/api/auth/login" && request.method === "POST") {
-        const { email, password } = (await request.json()) as { email: string; password: string };
-        if (email !== PERSON.email || password !== state.password) {
+        const { email, password: given } = (await request.json()) as {
+          email: string;
+          password: string;
+        };
+        if (email !== person.email || given !== state.password) {
           return new Response(JSON.stringify({ error: "Invalid email or password" }), {
             status: 401,
           });
         }
         state.authenticated = true;
         return new Response(
-          JSON.stringify({ person: PERSON, mustChangePassword: state.mustChangePassword }),
+          JSON.stringify({ person, mustChangePassword: state.mustChangePassword }),
           { status: 200 },
         );
       }
@@ -44,7 +65,7 @@ const stubAuthApi = (initialPassword = "initial-pw") => {
           return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 });
         }
         return new Response(
-          JSON.stringify({ person: PERSON, mustChangePassword: state.mustChangePassword }),
+          JSON.stringify({ person, mustChangePassword: state.mustChangePassword }),
           { status: 200 },
         );
       }
@@ -72,6 +93,13 @@ const stubAuthApi = (initialPassword = "initial-pw") => {
         return new Response(null, { status: 204 });
       }
 
+      // AdminPage (rendered when an admin reaches "/") fetches the people
+      // list too — an empty one is enough for these tests, which are only
+      // concerned with who gets to see the page at all.
+      if (url.pathname === "/api/people" && request.method === "GET") {
+        return new Response(JSON.stringify([]), { status: 200 });
+      }
+
       return new Response(null, { status: 204 });
     }),
   );
@@ -94,7 +122,7 @@ const renderAt = (path: string) => {
 
 describe("logging in", () => {
   it("forces a password change on first login, then shows the account view", async () => {
-    stubAuthApi("initial-pw");
+    stubAuthApi();
     const user = userEvent.setup();
     renderAt("/login");
 
@@ -103,6 +131,10 @@ describe("logging in", () => {
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
     await screen.findByText("This is your first time logging in — please set a new password.");
+
+    // A non-admin gets no way into the people-management page — see the
+    // "admin access" describe block below for the page itself being gated.
+    expect(screen.queryByRole("link", { name: "Manage people" })).toBeNull();
 
     await user.type(screen.getByLabelText("Current password"), "initial-pw");
     await user.type(screen.getByLabelText("New password"), "a-brand-new-password");
@@ -113,7 +145,7 @@ describe("logging in", () => {
   });
 
   it("shows an error and stays on the login page for the wrong password", async () => {
-    stubAuthApi("initial-pw");
+    stubAuthApi();
     const user = userEvent.setup();
     renderAt("/login");
 
@@ -122,5 +154,24 @@ describe("logging in", () => {
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
     await screen.findByText("Incorrect email or password");
+  });
+});
+
+describe("admin access to the people-management page", () => {
+  it("shows a 'no access' message to a logged-in non-admin who visits it directly", async () => {
+    stubAuthApi({ startAuthenticated: true });
+    renderAt("/");
+
+    await screen.findByText("You don't have access to this page.");
+    expect(screen.queryByLabelText("Name")).toBeNull();
+  });
+
+  it("shows the page, and the nav link, to a logged-in admin", async () => {
+    const admin: Person = { ...PERSON, isAdmin: true };
+    stubAuthApi({ person: admin, startAuthenticated: true });
+    renderAt("/");
+
+    await screen.findByLabelText("Name");
+    expect(screen.getByRole("link", { name: "Manage people" })).not.toBeNull();
   });
 });

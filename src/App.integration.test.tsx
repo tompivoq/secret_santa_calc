@@ -21,6 +21,11 @@ const renderApp = () =>
  * rather than a fixed sequence of canned responses keeps the test immune to
  * however many times RTK Query decides to refetch.
  *
+ * Also stubs a permanently-logged-in-as-admin session for /api/auth/me —
+ * AdminPage (this test's concern) is gated behind that on the real server,
+ * so without it nothing here would ever render. The login flow itself is
+ * covered separately in Auth.integration.test.tsx.
+ *
  * This deliberately implements only what this test exercises — the full
  * reciprocal-link algorithm, with all its unlink-the-previous-partner edge
  * cases, is covered by the server's own suite against a real database.
@@ -37,6 +42,16 @@ const stubPeopleApi = () => {
       // on the Request itself, not in a separate init.
       const request = input instanceof Request ? input : new Request(input, init);
       const url = new URL(request.url);
+
+      if (url.pathname === "/api/auth/me" && request.method === "GET") {
+        return new Response(
+          JSON.stringify({
+            person: { id: 0, name: "Admin", email: "admin@example.com", phone: 0, isAdmin: true },
+            mustChangePassword: false,
+          }),
+          { status: 200 },
+        );
+      }
 
       if (url.pathname === "/api/people" && request.method === "GET") {
         return new Response(JSON.stringify(people), { status: 200 });
@@ -79,7 +94,10 @@ const addPerson = async (
   phone: string,
   partnerName?: string,
 ) => {
-  await user.clear(screen.getByLabelText("Name"));
+  // AdminPage is gated behind AdminRoute, which shows a "Loading…" state
+  // until the (stubbed) /api/auth/me check resolves — findByLabelText
+  // waits that out on the first call.
+  await user.clear(await screen.findByLabelText("Name"));
   await user.clear(screen.getByLabelText("Email"));
   await user.clear(screen.getByLabelText("Phone"));
   await user.type(screen.getByLabelText("Name"), name);

@@ -67,7 +67,7 @@ their match is ready to view.
   whole family.
 - Skip (or nudge first) anyone still sitting on their initial,
   never-confirmed password when the draw runs — get them logged in and
-  their password set *before* the draw, not after.
+  their password set _before_ the draw, not after.
 
 ## Matching/draw feature
 

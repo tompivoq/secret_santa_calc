@@ -9,6 +9,7 @@
     "copy:migrations": "node -e \"require('fs').cpSync('src/db/migrations','dist/db/migrations',{recursive:true})\"",
     "start": "node dist/index.js",
     "db:generate": "drizzle-kit generate",
+    "set-admin": "tsx src/scripts/set-admin.ts",
     "test": "vitest run"
   },
   "dependencies": {

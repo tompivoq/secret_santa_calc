@@ -8,6 +8,7 @@ const makePerson = (id: number, partnerId?: number): Person => ({
   email: `person${id}@example.com`,
   phone: 22334455,
   partnerId,
+  isAdmin: false,
 });
 
 describe("findPartner", () => {

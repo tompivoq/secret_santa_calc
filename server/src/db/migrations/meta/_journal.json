@@ -15,6 +15,13 @@
       "when": 1788444465451,
       "tag": "0001_wooden_sasquatch",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788506837570,
+      "tag": "0002_volatile_gwen_stacy",
+      "breakpoints": true
     }
   ]
 }

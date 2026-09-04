@@ -1,12 +1,12 @@
 import { Hono } from "hono";
-import type { Context, Next } from "hono";
 import { cors } from "hono/cors";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import type { Db } from "./db/client.js";
 import { addPerson, listPeople, removePerson, setPartner } from "./people.js";
 import { changePassword, getMustChangePassword, login } from "./auth/service.js";
-import { clearSession, createSession, readSession } from "./auth/session.js";
+import { clearSession, createSession } from "./auth/session.js";
+import { requireAdmin, requireAuth, type AuthVariables } from "./auth/middleware.js";
 
 const newPersonSchema = z.object({
   name: z.string().min(1),
@@ -35,21 +35,15 @@ const isUniqueConstraintError = (err: unknown): boolean =>
 
 /** Builds the Hono app against a given DB instance — a fresh instance per test keeps them isolated. */
 export const createApp = (db: Db, authSecret: string) => {
-  const app = new Hono<{ Variables: { personId: number } }>();
+  const app = new Hono<{ Variables: AuthVariables }>();
 
   app.use("*", cors({ origin: (origin) => origin, credentials: true }));
 
-  /** Requires a valid session cookie; otherwise responds 401 and short-circuits. */
-  const requireAuth = async (c: Context<{ Variables: { personId: number } }>, next: Next) => {
-    const personId = await readSession(c, authSecret);
-    if (personId === null) {
-      return c.json({ error: "Not authenticated" }, 401);
-    }
-    c.set("personId", personId);
-    await next();
-  };
-
-  const people = new Hono()
+  // Seeing or editing the full list of people — including everyone's
+  // email, phone, and (at creation time) their plaintext initial password
+  // — is an admin action, not something every logged-in person gets.
+  const people = new Hono<{ Variables: AuthVariables }>()
+    .use("*", requireAuth(authSecret), requireAdmin(db))
     .get("/", (c) => c.json(listPeople(db)))
     .post("/", zValidator("json", newPersonSchema), (c) => {
       try {
@@ -82,7 +76,7 @@ export const createApp = (db: Db, authSecret: string) => {
       return c.body(null, 204);
     });
 
-  const auth = new Hono<{ Variables: { personId: number } }>()
+  const auth = new Hono<{ Variables: AuthVariables }>()
     .post("/login", zValidator("json", loginSchema), async (c) => {
       const { email, password } = c.req.valid("json");
       const result = login(db, email, password);
@@ -96,7 +90,7 @@ export const createApp = (db: Db, authSecret: string) => {
       clearSession(c);
       return c.body(null, 204);
     })
-    .get("/me", requireAuth, (c) => {
+    .get("/me", requireAuth(authSecret), (c) => {
       const personId = c.get("personId");
       const person = listPeople(db).find((p) => p.id === personId);
       if (!person) {
@@ -106,14 +100,19 @@ export const createApp = (db: Db, authSecret: string) => {
       }
       return c.json({ person, mustChangePassword: getMustChangePassword(db, personId) });
     })
-    .post("/change-password", requireAuth, zValidator("json", changePasswordSchema), (c) => {
-      const { currentPassword, newPassword } = c.req.valid("json");
-      const ok = changePassword(db, c.get("personId"), currentPassword, newPassword);
-      if (!ok) {
-        return c.json({ error: "Current password is incorrect" }, 401);
-      }
-      return c.body(null, 204);
-    });
+    .post(
+      "/change-password",
+      requireAuth(authSecret),
+      zValidator("json", changePasswordSchema),
+      (c) => {
+        const { currentPassword, newPassword } = c.req.valid("json");
+        const ok = changePassword(db, c.get("personId"), currentPassword, newPassword);
+        if (!ok) {
+          return c.json({ error: "Current password is incorrect" }, 401);
+        }
+        return c.body(null, 204);
+      },
+    );
 
   app.route("/api/people", people);
   app.route("/api/auth", auth);

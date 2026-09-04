@@ -11,6 +11,10 @@ export const people = sqliteTable("people", {
   // little benefit at this scale) — reciprocity and validity are enforced
   // in the people service instead.
   partnerId: integer("partner_id"),
+  // Gates access to the people-management API (list/create/delete/partner)
+  // — see auth/middleware.ts. Not settable through the app itself; granted
+  // out-of-band via the set-admin script (server/src/scripts/set-admin.ts).
+  isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
 });
 
 export type PersonRow = typeof people.$inferSelect;
