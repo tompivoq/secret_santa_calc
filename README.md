@@ -74,7 +74,11 @@ npm run dev
 ```
 
 The database file is created at `server/data/db.sqlite` on first run
-(migrations apply automatically on startup).
+(migrations apply automatically on startup). Dev builds also seed a
+fixed-password admin account (`admin@dev.local` / `devpassword`, logged
+to the console on startup) so there's always something to log in as
+locally — this never runs in production (gated on `NODE_ENV`, the same
+variable the deployed systemd service sets).
 
 ## Build
 
