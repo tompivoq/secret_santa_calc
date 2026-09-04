@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { addPerson, listPeople, removePerson, setPartner } from "./people.js";
-import { createDb, type Db } from "./db/client.js";
-import { migrationsFolder } from "./db/migrate.js";
+import { createDb, type Db } from "../db/client.js";
+import { migrationsFolder } from "../db/migrate.js";
 
 let db: Db;
 

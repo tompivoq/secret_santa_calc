@@ -5,7 +5,7 @@ import { createApp } from "./app.js";
 import { createDb, type Db } from "./db/client.js";
 import { migrationsFolder } from "./db/migrate.js";
 import { people } from "./db/schema.js";
-import { addPerson, type CreatedPerson } from "./people.js";
+import { addPerson, type CreatedPerson } from "./people/people.js";
 
 let db: Db;
 let app: ReturnType<typeof createApp>;

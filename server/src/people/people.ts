@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
-import type { Db, Tx } from "./db/client.js";
-import { people, type PersonRow } from "./db/schema.js";
-import { createInitialCredentials } from "./auth/service.js";
+import type { Db, Tx } from "../db/client.js";
+import { people, type PersonRow } from "../db/schema.js";
+import { createInitialCredentials } from "../auth/service.js";
 
 export const listPeople = (db: Db) => db.select().from(people).all();
 

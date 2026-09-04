@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { createDb, type Db } from "../db/client.js";
 import { migrationsFolder } from "../db/migrate.js";
 import { credentials } from "../db/schema.js";
-import { addPerson } from "../people.js";
+import { addPerson } from "../people/people.js";
 import { changePassword, login } from "./service.js";
 
 let db: Db;

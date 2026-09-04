@@ -1,11 +1,8 @@
 import type { Context, Next } from "hono";
 import type { Db } from "../db/client.js";
-import { listPeople } from "../people.js";
+import { listPeople } from "../people/people.js";
 import { readSession } from "./session.js";
-
-export interface AuthVariables {
-  personId: number;
-}
+import { AuthVariables } from "./types.js";
 
 /** Requires a valid session cookie; otherwise responds 401 and short-circuits. Sets `personId` in context for downstream handlers. */
 export const requireAuth =

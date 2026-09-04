@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { createDb, type Db } from "../db/client.js";
 import { migrationsFolder } from "../db/migrate.js";
-import { listPeople } from "../people.js";
+import { listPeople } from "../people/people.js";
 import { login } from "../auth/service.js";
 import { DEV_ADMIN_EMAIL, DEV_ADMIN_PASSWORD, seedDevAdmin } from "./seedAdmin.js";
 
