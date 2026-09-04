@@ -1,29 +1,21 @@
 import { configureStore } from "@reduxjs/toolkit";
-import type { Person } from "../models/person";
-import peopleReducer from "./peopleSlice";
-import { loadPeople, savePeople } from "./persistence";
+import { peopleApi } from "./peopleApi";
+import { authApi } from "./authApi";
 
 /**
- * Creates a store instance. Defaults to hydrating from localStorage so the
- * app resumes where the user left off; pass an explicit `preloadedPeople`
- * (e.g. `[]` in tests) to skip that and start clean.
+ * Creates a store instance. The app uses one singleton; tests create their
+ * own so RTK Query's cache (and any in-flight requests) don't leak between
+ * tests.
  */
-export const createStore = (preloadedPeople: Person[] = loadPeople()) => {
-  const store = configureStore({
+export const createStore = () =>
+  configureStore({
     reducer: {
-      people: peopleReducer,
+      [peopleApi.reducerPath]: peopleApi.reducer,
+      [authApi.reducerPath]: authApi.reducer,
     },
-    preloadedState: {
-      people: preloadedPeople,
-    },
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware().concat(peopleApi.middleware, authApi.middleware),
   });
-
-  store.subscribe(() => {
-    savePeople(store.getState().people);
-  });
-
-  return store;
-};
 
 export const store = createStore();
 

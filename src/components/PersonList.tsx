@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import type { Person } from "../models/person";
-import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { partnerSet, personRemoved } from "../store/peopleSlice";
-import { selectAllPeople } from "../store/selectors";
+import {
+  useGetPeopleQuery,
+  useRemovePersonMutation,
+  useSetPartnerMutation,
+} from "../store/peopleApi";
 import { findPartner } from "../utils/person_utils";
 import { reject } from "lodash-es";
 import clsx from "clsx";
@@ -82,9 +84,13 @@ const ListPerson = ({ person, others, onSetPartner, onDelete }: ListPersonProps)
   );
 };
 
+const NO_PEOPLE: Person[] = [];
+
 function PersonList() {
-  const people = useAppSelector(selectAllPeople);
-  const dispatch = useAppDispatch();
+  const { data } = useGetPeopleQuery();
+  const people = data ?? NO_PEOPLE;
+  const [removePerson] = useRemovePersonMutation();
+  const [setPartner] = useSetPartnerMutation();
 
   const othersById = useMemo(
     () => new Map(people.map((person) => [person.id, reject(people, { id: person.id })])),
@@ -102,8 +108,8 @@ function PersonList() {
           key={person.id}
           person={person}
           others={othersById.get(person.id) ?? []}
-          onDelete={() => dispatch(personRemoved(person.id))}
-          onSetPartner={(personId, partnerId) => dispatch(partnerSet({ personId, partnerId }))}
+          onDelete={() => removePerson(person.id)}
+          onSetPartner={(personId, partnerId) => setPartner({ personId, partnerId })}
         />
       ))}
     </ul>
