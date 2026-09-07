@@ -30,11 +30,11 @@ const ListPerson = ({ person, others, onSetPartner, onDelete }: ListPersonProps)
 	return (
 		<li
 			key={person.id}
-			className="flex flex-col gap-3 rounded-xl border border-gray-400 p-4 sm:flex-row sm:items-center sm:justify-between"
+			className="flex flex-col gap-3 rounded-xl border border-blue-spruce-400 p-4 sm:flex-row sm:items-center sm:justify-between"
 		>
 			<div>
 				<p className="font-medium">{person.name}</p>
-				<p className="text-sm text-gray-500 dark:text-gray-400">
+				<p className="text-sm">
 					{person.email} | {person.phone}
 				</p>
 			</div>
@@ -50,7 +50,7 @@ const ListPerson = ({ person, others, onSetPartner, onDelete }: ListPersonProps)
 						onChange={(event) =>
 							onSetPartner(person.id, event.target.value === "" ? null : Number(event.target.value))
 						}
-						className="mx-2 w-full rounded-md border border-gray-300 px-2.5 py-2 text-base dark:border-gray-700"
+						className="mx-2 w-full rounded-md border border-border-blue-spruce-400 px-2.5 py-2 text-base"
 					>
 						<option value="">None</option>
 						{others.map((p) => (

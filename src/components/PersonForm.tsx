@@ -4,6 +4,7 @@ import { isPhoneNumber } from "../models/type_check";
 import { useForm } from "react-hook-form";
 import clsx from "clsx";
 import { useState } from "react";
+import { Button } from "./shared/Button";
 
 interface FormData {
 	name: string;
@@ -102,7 +103,7 @@ function PersonForm() {
 							)}
 						</div>
 					</div>
-					<div className="flex w-full flex-row justify-between gap-4">
+					<div className="flex w-full flex-col md:flex-row justify-between gap-4">
 						<div className="flex w-full flex-col gap-1">
 							<label htmlFor="email" className="text-sm font-semibold">
 								Email
@@ -169,14 +170,9 @@ function PersonForm() {
 							))}
 						</select>
 					</div>
-
-					<button
-						type="submit"
-						disabled={!isValid}
-						className="cursor-pointer self-start rounded-md border border-gray-700 px-4 py-2 text-base hover:bg-gray-100 dark:border-gray-300 dark:hover:bg-gray-800"
-					>
-						Add Person
-					</button>
+					<div className="flex flex-row w-full justify-end">
+						<Button type="submit" disabled={!isValid} behaviour="action">Add Person</Button>
+					</div>
 				</form>
 			</div>
 		</div>

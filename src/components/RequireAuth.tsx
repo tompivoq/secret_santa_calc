@@ -34,7 +34,7 @@ function RequireAuth({
 
 	if (adminOnly && !data.person.isAdmin) {
 		return (
-			<p className="mt-8 rounded-xl border border-gray-400 p-5 text-center">
+			<p className="mt-8 rounded-xl border border-blue-spruce-400 p-5 text-center">
 				You don't have access to this page.
 			</p>
 		);

@@ -2,4 +2,68 @@
 
 @theme {
 	--font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
+
+	--color-*: initial;
+	--color-white: #fff;
+	--color-black: #000;
+
+	--color-oxblood-50: #ffeae5;
+	--color-oxblood-100: #ffd5cc;
+	--color-oxblood-200: #ffac99;
+	--color-oxblood-300: #ff8266;
+	--color-oxblood-400: #ff5833;
+	--color-oxblood-500: #ff2f00;
+	--color-oxblood-600: #cc2500;
+	--color-oxblood-700: #991c00;
+	--color-oxblood-800: #661300;
+	--color-oxblood-900: #330900;
+	--color-oxblood-950: #240700;
+
+	--color-blue-spruce-50: #e8fcf9;
+	--color-blue-spruce-100: #d1faf4;
+	--color-blue-spruce-200: #a4f4e8;
+	--color-blue-spruce-300: #76efdd;
+	--color-blue-spruce-400: #48ead1;
+	--color-blue-spruce-500: #1be4c6;
+	--color-blue-spruce-600: #15b79e;
+	--color-blue-spruce-700: #108977;
+	--color-blue-spruce-800: #0b5b4f;
+	--color-blue-spruce-900: #052e28;
+	--color-blue-spruce-950: #04201c;
+
+	--color-pearl-aqua-50: #edf7f7;
+	--color-pearl-aqua-100: #dcefee;
+	--color-pearl-aqua-200: #b8e0de;
+	--color-pearl-aqua-300: #95d0cd;
+	--color-pearl-aqua-400: #71c1bd;
+	--color-pearl-aqua-500: #4eb1ac;
+	--color-pearl-aqua-600: #3e8e8a;
+	--color-pearl-aqua-700: #2f6a67;
+	--color-pearl-aqua-800: #1f4745;
+	--color-pearl-aqua-900: #102322;
+	--color-pearl-aqua-950: #0b1918;
+
+	--color-metallic-gold-50: #fbf6ea;
+	--color-metallic-gold-100: #f6edd5;
+	--color-metallic-gold-200: #eedcaa;
+	--color-metallic-gold-300: #e5ca80;
+	--color-metallic-gold-400: #dcb856;
+	--color-metallic-gold-500: #d4a72b;
+	--color-metallic-gold-600: #a98523;
+	--color-metallic-gold-700: #7f641a;
+	--color-metallic-gold-800: #554311;
+	--color-metallic-gold-900: #2a2109;
+	--color-metallic-gold-950: #1e1706;
+
+	--color-ink-black-50: #ebeafb;
+	--color-ink-black-100: #d7d4f7;
+	--color-ink-black-200: #b0aaee;
+	--color-ink-black-300: #887fe6;
+	--color-ink-black-400: #6055dd;
+	--color-ink-black-500: #382ad5;
+	--color-ink-black-600: #2d22aa;
+	--color-ink-black-700: #221980;
+	--color-ink-black-800: #171155;
+	--color-ink-black-900: #0b082b;
+	--color-ink-black-950: #08061e;
 }

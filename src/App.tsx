@@ -5,12 +5,13 @@ import ChangePasswordPage from "./pages/ChangePasswordPage";
 import LoginPage from "./pages/LoginPage";
 import RequireAuth from "./components/RequireAuth";
 import { TopBarNav } from "./components/TopBarNav";
+import { StyleGuide } from "./pages/StyleGuide";
 
 function App() {
 	return (
 		<BrowserRouter>
 			<TopBarNav />
-			<main className="mx-auto max-w-2xl px-6 pb-12 text-center">
+			<main className="mx-auto max-w-4xl pt-2 px-6 pb-12 text-center">
 				<Routes>
 					<Route
 						path="/"
@@ -29,6 +30,7 @@ function App() {
 							</RequireAuth>
 						}
 					/>
+					<Route path="/styleguide" element={<StyleGuide />} />
 					{/* Not wrapped in RequireAuth — this is where RequireAuth itself
               redirects to while mustChangePassword is set, and it applies
               its own (inverse) guard: nothing pending means nothing to do
