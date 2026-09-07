@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useLogoutMutation, useMeQuery } from "../store/authApi";
 import { Button } from "./shared/Button";
@@ -13,17 +14,42 @@ export const TopBarNav = () => {
 	// this would keep rendering the signed-in nav. Check isError too, same
 	// as RequireAuth does for the same reason.
 	const isSignedIn = me !== undefined && !isError;
+	// Gated behind `isSignedIn &&` everywhere it's used below, so a stale
+	// `true` left over from before a logout never actually renders anything.
+	const [menuOpen, setMenuOpen] = useState(false);
 
 	return (
-		<div className="flex w-full flex-row justify-center bg-oxblood-900 pt-2">
-			<div className="mx-auto flex w-2xl flex-row items-center-safe justify-between">
-				<h1 className="text-left text-2xl font-medium text-metallic-gold-500">
-					Julenissen
-				</h1>
-				<nav className="my-4 flex flex-1 w-full justify-end text-base">
+		<div className="bg-oxblood-900 flex w-full flex-col pt-2">
+			<div className="mx-auto flex w-full max-w-2xl flex-row items-center-safe justify-between px-4 md:px-0">
+				<h1 className="text-metallic-gold-500 text-left text-2xl font-medium">Julenissen</h1>
+				{isSignedIn && (
+					<button
+						type="button"
+						onClick={() => setMenuOpen((open) => !open)}
+						aria-label="Toggle menu"
+						aria-expanded={menuOpen}
+						className="text-metallic-gold-500 cursor-pointer p-2 md:hidden"
+					>
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth={2}
+							strokeLinecap="round"
+							className="size-6"
+						>
+							{menuOpen ? (
+								<path d="M6 6l12 12M18 6l-12 12" />
+							) : (
+								<path d="M4 6h16M4 12h16M4 18h16" />
+							)}
+						</svg>
+					</button>
+				)}
+				<nav className="my-4 hidden flex-1 justify-end text-base md:flex">
 					{isSignedIn && (
 						<>
-							<div id="page_nav" className="flex gap-4 px-4 items-center-safe">
+							<div id="page_nav" className="flex items-center-safe gap-4 px-4">
 								{me.person.isAdmin && (
 									<Link to="/" className="underline hover:no-underline">
 										Manage people
@@ -37,12 +63,51 @@ export const TopBarNav = () => {
 								<p className="text-sm">
 									Signed in as <span className="font-semibold">{me.person.name}</span>
 								</p>
-								<Button onClick={() => logout()} behaviour="action">Log out</Button>
+								<Button onClick={() => logout()} behaviour="action">
+									Log out
+								</Button>
 							</div>
 						</>
 					)}
 				</nav>
 			</div>
+
+			{isSignedIn && menuOpen && (
+				<nav className="mx-auto flex w-full max-w-2xl flex-col items-start gap-4 px-4 pb-4 text-base md:hidden">
+					<div id="page_nav" className="flex flex-col gap-3">
+						{me.person.isAdmin && (
+							<Link
+								to="/"
+								className="underline hover:no-underline"
+								onClick={() => setMenuOpen(false)}
+							>
+								Manage people
+							</Link>
+						)}
+						<Link
+							to="/account"
+							className="underline hover:no-underline"
+							onClick={() => setMenuOpen(false)}
+						>
+							My account
+						</Link>
+					</div>
+					<div id="user" className="flex flex-col items-start gap-1">
+						<p className="text-sm">
+							Signed in as <span className="font-semibold">{me.person.name}</span>
+						</p>
+						<Button
+							onClick={() => {
+								setMenuOpen(false);
+								logout();
+							}}
+							behaviour="action"
+						>
+							Log out
+						</Button>
+					</div>
+				</nav>
+			)}
 		</div>
 	);
 };
