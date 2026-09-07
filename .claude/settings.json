@@ -1,17 +1,5 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(npx oxlint *)",
-      "Bash(npx vitest *)",
-      "WebFetch(domain:npmx.dev)",
-      "WebFetch(domain:viteplus.dev)",
-      "Bash(npx vp *)",
-      "Bash(cd \"c:/Users/thojb/dev/secret_santa_calc\" && rm -rf dist && npx vp build 2>&1)"
-    ],
-    "additionalDirectories": [
-      "C:\\Users\\thojb\\dev\\secret_santa_calc"
-    ]
-  },
+  "permissions": { },
   "hooks": {
     "PostToolUse": [
       {
