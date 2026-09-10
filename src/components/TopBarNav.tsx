@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useLogoutMutation, useMeQuery } from "../store/authApi";
 import { Button } from "./shared/Button";
+import LogoFull from "./../../public/JulenissenLogoType.png";
+import Logo from "./../../public/JulenissenLogo.png";
 
 export const TopBarNav = () => {
 	// Also queried (and cached) inside RequireAuth/AccountPage/ChangePasswordPage
@@ -20,8 +22,9 @@ export const TopBarNav = () => {
 
 	return (
 		<div className="bg-oxblood-900 flex w-full flex-col pt-2">
-			<div className="mx-auto flex w-full max-w-2xl flex-row items-center-safe justify-between px-4 md:px-0">
-				<h1 className="text-metallic-gold-500 text-left text-2xl font-medium">Julenissen</h1>
+			<div className="mx-auto flex w-full max-w-4xl flex-row h-32 items-center-safe justify-between px-8 md:px-0">
+				<img src={LogoFull} className="h-3/5 justify-self-start hidden md:flex" alt="Julenissen" title="Julenissen" />
+				<img src={Logo} className="h-3/5 justify-self-start md:hidden" alt="Julenissen" title="Julenissen" />
 				{isSignedIn && (
 					<button
 						type="button"
