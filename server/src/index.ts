@@ -29,8 +29,8 @@ const appBaseUrl = process.env.APP_BASE_URL ?? `http://localhost:${port}`;
 const app = createApp(db, authSecret, {
 	appBaseUrl,
 	// Reads RESEND_API_KEY / MAIL_FROM, and logs instead of sending if
-	// either is missing. Both are secrets/config for the deployed service to
-	// provide — never committed. See DEPLOYMENT.md.
+	// either is missing. Both are provided by the deployed service's
+	// environment and never committed — see the env var table in README.md.
 	mailer: createMailerFromEnv(),
 });
 

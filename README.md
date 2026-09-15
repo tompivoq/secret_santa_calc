@@ -92,8 +92,52 @@ For the backend:
 ```bash
 cd server
 npm run build   # compiles to server/dist
-npm start       # runs the compiled server (reads PORT / DATABASE_PATH env vars)
+npm start       # runs the compiled server (see the env vars below)
 ```
+
+## Server environment variables
+
+All optional in development — the server runs without any of them, and
+says what it's falling back to.
+
+| Variable         | Purpose                                                                 |
+| ---------------- | ----------------------------------------------------------------------- |
+| `PORT`           | Port to listen on. Defaults to 3001.                                     |
+| `DATABASE_PATH`  | SQLite file. Defaults to `./data/db.sqlite`.                             |
+| `AUTH_SECRET`    | JWT signing secret. Generated and persisted beside the database if unset.|
+| `APP_BASE_URL`   | How the app is reached from outside — what emailed login links point at. |
+| `RESEND_API_KEY` | Resend API key, for sending match emails.                                |
+| `MAIL_FROM`      | Sender address on those emails, e.g. `Julenissen <santa@example.com>`.   |
+
+`APP_BASE_URL` has no sensible default for a deployed service, so set it
+to wherever the app actually answers, including any path prefix. It's used
+both to build magic-link URLs and to redirect back into the app after one
+is followed — get it wrong and the links go somewhere that isn't the app.
+
+With `RESEND_API_KEY` or `MAIL_FROM` missing, emails are written to the
+log instead of being sent, and every send says so. That keeps local
+development working without credentials, but it means a misconfigured
+production service quietly sends nothing — so check the startup log after
+changing either.
+
+**`RESEND_API_KEY` is a secret and must not be committed.** On the home
+server it lives in an environment file outside the repo, readable only by
+the account the service runs as, and is loaded by the systemd unit:
+
+```bash
+# On the server, as the account running the service:
+install -m 600 /dev/null ~/secret_santa_api.env
+$EDITOR ~/secret_santa_api.env        # RESEND_API_KEY=..., MAIL_FROM=..., APP_BASE_URL=...
+
+# Then, in the [Service] section of the unit:
+#   EnvironmentFile=%h/secret_santa_api.env
+systemctl --user daemon-reload && systemctl --user restart secret-santa-api
+```
+
+`install -m 600` creates the file already locked down, rather than
+creating it world-readable and narrowing it afterwards. Nothing in this
+repo reads that file — the service inherits the variables from systemd —
+so there's no path by which the key reaches git.
 
 ## Checks
 

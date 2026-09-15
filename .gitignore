@@ -15,6 +15,13 @@ dist-ssr
 # Claude Code local overrides
 .claude/settings.local.json
 
+# Secrets — the Resend API key and friends live in the environment, never
+# in the repo (see the env var table in README.md). Ignored so a stray
+# local .env can't be committed by accident.
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
