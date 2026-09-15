@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
 import clsx from "clsx";
-import { authApi, useChangePasswordMutation } from "../store/authApi";
+import { authApi, useChangePasswordMutation, useMeQuery } from "../store/authApi";
 import type { AppDispatch } from "../store/store";
 
 interface FormData {
@@ -23,7 +23,12 @@ interface ChangePasswordFormProps {
 
 function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps = {}) {
 	const dispatch = useDispatch<AppDispatch>();
+	const { data: me } = useMeQuery();
 	const [changePassword, { isLoading }] = useChangePasswordMutation();
+	// Someone who got here from an emailed link has never had a password, so
+	// asking for the current one would be a field they cannot fill in. The
+	// server decides this and enforces it either way.
+	const requiresCurrent = me?.requiresCurrentPassword !== false;
 	const {
 		register,
 		handleSubmit,
@@ -33,7 +38,10 @@ function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps = {}) {
 
 	const onSubmit = async (data: FormData) => {
 		try {
-			await changePassword(data).unwrap();
+			await changePassword({
+				newPassword: data.newPassword,
+				...(requiresCurrent && { currentPassword: data.currentPassword }),
+			}).unwrap();
 			// The mutation also invalidates the "me" query's cache tag, but that
 			// refetch is async and not guaranteed to land before onSuccess (e.g.
 			// ChangePasswordPage's navigate("/account")) runs — without this,
@@ -58,24 +66,30 @@ function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps = {}) {
 			className="flex flex-col items-stretch gap-4 rounded-xl border border-gray-400 p-5 text-left"
 			onSubmit={handleSubmit(onSubmit)}
 		>
-			<p className="text-sm">This is your first time logging in — please set a new password.</p>
+			<p className="text-sm">
+				{requiresCurrent
+					? "This is your first time logging in — please set a new password."
+					: "Pick a password, so you can also log in without a link next time."}
+			</p>
 
-			<div className="flex flex-col gap-1">
-				<label htmlFor="currentPassword" className="text-sm font-semibold">
-					Current password
-				</label>
-				<input
-					id="currentPassword"
-					type="password"
-					{...register("currentPassword", { required: "Required" })}
-					className={inputClasses(!!errors.currentPassword)}
-				/>
-				{errors.currentPassword && (
-					<span className="text-sm text-red-600 dark:text-red-400">
-						{errors.currentPassword.message}
-					</span>
-				)}
-			</div>
+			{requiresCurrent && (
+				<div className="flex flex-col gap-1">
+					<label htmlFor="currentPassword" className="text-sm font-semibold">
+						Current password
+					</label>
+					<input
+						id="currentPassword"
+						type="password"
+						{...register("currentPassword", { required: "Required" })}
+						className={inputClasses(!!errors.currentPassword)}
+					/>
+					{errors.currentPassword && (
+						<span className="text-sm text-red-600 dark:text-red-400">
+							{errors.currentPassword.message}
+						</span>
+					)}
+				</div>
+			)}
 
 			<div className="flex flex-col gap-1">
 				<label htmlFor="newPassword" className="text-sm font-semibold">

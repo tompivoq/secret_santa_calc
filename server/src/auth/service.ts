@@ -57,15 +57,28 @@ export const getMustChangePassword = (db: Db, personId: number): boolean => {
  * initial password alone isn't enough to lock the real person out.
  * Returns false if there are no credentials for this person, or the
  * current password given doesn't match.
+ *
+ * `allowWithoutCurrent` is the one exception, and the caller is
+ * responsible for having established something at least as good: it's used
+ * for someone who arrived by emailed login link and has never chosen a
+ * password, where possession of the link already proves control of the
+ * address. See the change-password route.
  */
 export const changePassword = (
 	db: Db,
 	personId: number,
-	currentPassword: string,
+	currentPassword: string | null,
 	newPassword: string,
+	{ allowWithoutCurrent = false }: { allowWithoutCurrent?: boolean } = {},
 ): boolean => {
 	const creds = db.select().from(credentials).where(eq(credentials.personId, personId)).get();
-	if (!creds || !verifyPassword(currentPassword, creds.passwordHash)) {
+	if (!creds) {
+		return false;
+	}
+	if (
+		!allowWithoutCurrent &&
+		(currentPassword === null || !verifyPassword(currentPassword, creds.passwordHash))
+	) {
 		return false;
 	}
 

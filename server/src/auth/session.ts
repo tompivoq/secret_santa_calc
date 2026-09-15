@@ -10,6 +10,18 @@ interface SessionPayload {
 	personId: number;
 	exp: number;
 	purpose?: string;
+	/**
+	 * Whether this session was started by following an emailed login link,
+	 * rather than by typing a password. It's what lets someone who has never
+	 * had a password of their own set one without being asked for the
+	 * current one — they proved control of their email address instead.
+	 */
+	viaMagicLink?: boolean;
+}
+
+export interface Session {
+	personId: number;
+	viaMagicLink: boolean;
 }
 
 /**
@@ -39,10 +51,12 @@ export const createSession = async (
 	c: Context,
 	personId: number,
 	secret: string,
+	options: { viaMagicLink?: boolean } = {},
 ): Promise<void> => {
 	const payload: SessionPayload = {
 		personId,
 		purpose: SESSION_PURPOSE,
+		...(options.viaMagicLink && { viaMagicLink: true }),
 		exp: Math.floor(Date.now() / 1000) + SESSION_LIFETIME_SECONDS,
 	};
 	const token = await sign(payload, secret, "HS256");
@@ -61,8 +75,8 @@ export const createSession = async (
 	});
 };
 
-/** Reads and verifies the session cookie on a request, if any. Returns the personId, or null. */
-export const readSession = async (c: Context, secret: string): Promise<number | null> => {
+/** Reads and verifies the session cookie on a request, if any. Returns the session, or null. */
+export const readSession = async (c: Context, secret: string): Promise<Session | null> => {
 	const token = getCookie(c, COOKIE_NAME);
 	if (!token) {
 		return null;
@@ -73,7 +87,7 @@ export const readSession = async (c: Context, secret: string): Promise<number | 
 		if (payload.purpose !== undefined && payload.purpose !== SESSION_PURPOSE) {
 			return null;
 		}
-		return payload.personId;
+		return { personId: payload.personId, viaMagicLink: payload.viaMagicLink === true };
 	} catch {
 		return null;
 	}

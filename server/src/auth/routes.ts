@@ -15,9 +15,20 @@ const loginSchema = z.object({
 });
 
 const changePasswordSchema = z.object({
-	currentPassword: z.string().min(1),
+	/** Omitted only by someone setting their first password from a magic-link session. */
+	currentPassword: z.string().min(1).optional(),
 	newPassword: z.string().min(8),
 });
+
+/**
+ * Whether this session may set a password without producing the current
+ * one: they followed an emailed link, and have never chosen a password of
+ * their own. Possession of the link proves control of the address, which
+ * is the same standard a password reset works to — and the exception stops
+ * applying the moment they have a password worth protecting.
+ */
+const maySkipCurrentPassword = (db: Db, personId: number, viaMagicLink: boolean): boolean =>
+	viaMagicLink && getMustChangePassword(db, personId);
 
 /**
  * `appBaseUrl` prefixes the post-link redirects. Empty (the default in
@@ -48,7 +59,9 @@ export const getRoutes = (db: Db, authSecret: string, appBaseUrl = "") =>
 			if (personId === null) {
 				return c.redirect(`${appBaseUrl}/login?error=link-expired`, 303);
 			}
-			await createSession(c, personId, authSecret);
+			// Flagged as link-originated, so the forced password change this
+			// person is about to be sent to can actually be completed.
+			await createSession(c, personId, authSecret, { viaMagicLink: true });
 			return c.redirect(`${appBaseUrl}/account`, 303);
 		})
 		.get("/me", requireAuth(authSecret), (c) => {
@@ -59,7 +72,13 @@ export const getRoutes = (db: Db, authSecret: string, appBaseUrl = "") =>
 				clearSession(c);
 				return c.json({ error: "Not authenticated" }, 401);
 			}
-			return c.json({ person, mustChangePassword: getMustChangePassword(db, personId) });
+			return c.json({
+				person,
+				mustChangePassword: getMustChangePassword(db, personId),
+				// Lets the form know whether to ask for the current password at
+				// all, rather than showing a field this person can't fill in.
+				requiresCurrentPassword: !maySkipCurrentPassword(db, personId, c.get("viaMagicLink")),
+			});
 		})
 		.post(
 			"/change-password",
@@ -67,7 +86,10 @@ export const getRoutes = (db: Db, authSecret: string, appBaseUrl = "") =>
 			zValidator("json", changePasswordSchema),
 			(c) => {
 				const { currentPassword, newPassword } = c.req.valid("json");
-				const ok = changePassword(db, c.get("personId"), currentPassword, newPassword);
+				const personId = c.get("personId");
+				const ok = changePassword(db, personId, currentPassword ?? null, newPassword, {
+					allowWithoutCurrent: maySkipCurrentPassword(db, personId, c.get("viaMagicLink")),
+				});
 				if (!ok) {
 					return c.json({ error: "Current password is incorrect" }, 401);
 				}

@@ -3,7 +3,6 @@ import { eq } from "drizzle-orm";
 import { sign, verify } from "hono/jwt";
 import type { Db } from "../db/client.js";
 import { credentials } from "../db/schema.js";
-import { generateInitialPassword, hashPassword } from "./password.js";
 
 /**
  * Long enough that someone who doesn't check their email for a week can
@@ -90,35 +89,9 @@ export const consumeMagicToken = async (
 		.where(eq(credentials.personId, payload.personId))
 		.run();
 
-	retireInitialPassword(db, creds.personId, creds.mustChangePassword);
+	// Deliberately leaves mustChangePassword alone. Someone who has never
+	// chosen a password still needs to, and the session this link produces
+	// is what lets them do it without being asked for the one they don't
+	// know — see the change-password route.
 	return payload.personId;
-};
-
-/**
- * Someone arriving by magic link has proved control of their email
- * address, which is what the forced first-login password change was there
- * to establish. Leaving the flag set would strand them: the change-password
- * form asks for the current password, and the whole reason for sending a
- * link is that they don't know it.
- *
- * So the flag is cleared — and the admin-generated password it was
- * guarding is replaced with an unusable one at the same time, rather than
- * being left working indefinitely for whoever set them up. Someone who has
- * already chosen their own password keeps it; this only ever retires one
- * they never picked.
- */
-const retireInitialPassword = (db: Db, personId: number, mustChangePassword: boolean): void => {
-	if (!mustChangePassword) {
-		return;
-	}
-
-	db.update(credentials)
-		.set({
-			// Not a blank or a marker value: a real hash of a secret nobody has,
-			// so it goes through the same verification path and simply never matches.
-			passwordHash: hashPassword(generateInitialPassword(32)),
-			mustChangePassword: false,
-		})
-		.where(eq(credentials.personId, personId))
-		.run();
 };

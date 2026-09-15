@@ -12,13 +12,20 @@ export interface LoginResponse {
 }
 
 export interface ChangePasswordRequest {
-	currentPassword: string;
+	/** Omitted when the server says it isn't needed — see `requiresCurrentPassword`. */
+	currentPassword?: string;
 	newPassword: string;
 }
 
 export interface MeResponse {
 	person: Person;
 	mustChangePassword: boolean;
+	/**
+	 * False for someone setting their first password after following an
+	 * emailed login link: they've never had one to type in. The server
+	 * decides this — the form just does as it's told.
+	 */
+	requiresCurrentPassword: boolean;
 }
 
 export const authApi = createApi({

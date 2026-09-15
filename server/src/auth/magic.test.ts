@@ -97,29 +97,101 @@ describe("magic-link tokens", () => {
 	});
 });
 
-describe("what following a magic link does to the password", () => {
-	it("retires an initial password the person never replaced", async () => {
+describe("setting a first password after arriving by magic link", () => {
+	const cookieFrom = (res: Response) => res.headers.get("set-cookie")!.split(";")[0]!;
+
+	const followLink = async (app: ReturnType<typeof createApp>, personId: number) => {
+		const token = (await issueMagicToken(db, personId, SECRET))!;
+		return cookieFrom(await app.request(`/api/auth/magic/${token}`));
+	};
+
+	const loginWithPassword = async (app: ReturnType<typeof createApp>, password: string) =>
+		cookieFrom(
+			await app.request("/api/auth/login", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email: "anna@example.com", password }),
+			}),
+		);
+
+	const setPassword = (
+		app: ReturnType<typeof createApp>,
+		cookie: string,
+		body: Record<string, string>,
+	) =>
+		app.request("/api/auth/change-password", {
+			method: "POST",
+			headers: { "Content-Type": "application/json", cookie },
+			body: JSON.stringify(body),
+		});
+
+	it("still requires the password change, so they're sent to set one", async () => {
+		const app = createApp(db, SECRET);
 		const anna = seed("Anna");
-		const token = (await issueMagicToken(db, anna.id, SECRET))!;
+		const cookie = await followLink(app, anna.id);
 
-		await consumeMagicToken(db, token, SECRET);
+		const me = (await (await app.request("/api/auth/me", { headers: { cookie } })).json()) as {
+			mustChangePassword: boolean;
+			requiresCurrentPassword: boolean;
+		};
 
-		// The admin who set Anna up knows this password; once she's proved she
-		// controls the email address, it stops being a way in.
+		// What sends them to /change-password rather than straight to /account.
+		expect(me.mustChangePassword).toBe(true);
+		// ...and the form is told not to ask for a password they've never had.
+		expect(me.requiresCurrentPassword).toBe(false);
+	});
+
+	it("lets them set one without producing the current password", async () => {
+		const app = createApp(db, SECRET);
+		const anna = seed("Anna");
+		const cookie = await followLink(app, anna.id);
+
+		const res = await setPassword(app, cookie, { newPassword: "a-password-anna-picked" });
+
+		expect(res.status).toBe(204);
+		expect(login(db, "anna@example.com", "a-password-anna-picked")).not.toBeNull();
+		// The admin-generated one they never used stops working, as it would
+		// have after any other forced change.
 		expect(login(db, "anna@example.com", anna.initialPassword)).toBeNull();
-		// ...and she isn't stranded on a change-password form asking for it.
 		expect(credsFor(anna.id).mustChangePassword).toBe(false);
 	});
 
+	it("does not extend that to a session that came from a password login", async () => {
+		const app = createApp(db, SECRET);
+		const anna = seed("Anna");
+		const cookie = await loginWithPassword(app, anna.initialPassword);
+
+		const res = await setPassword(app, cookie, { newPassword: "chosen-by-someone-else" });
+
+		// Same mustChangePassword state, but no proof of email control — so
+		// knowing the initial password is still required, exactly as before.
+		expect(res.status).toBe(401);
+		expect(login(db, "anna@example.com", "chosen-by-someone-else")).toBeNull();
+	});
+
+	it("stops allowing it once they have a password of their own", async () => {
+		const app = createApp(db, SECRET);
+		const anna = seed("Anna");
+		const firstCookie = await followLink(app, anna.id);
+		await setPassword(app, firstCookie, { newPassword: "a-password-anna-picked" });
+
+		// A second link: still proof of email control, but she now has a
+		// password worth protecting, so changing it takes the current one.
+		const secondCookie = await followLink(app, anna.id);
+		const res = await setPassword(app, secondCookie, { newPassword: "quietly-taken-over" });
+
+		expect(res.status).toBe(401);
+		expect(login(db, "anna@example.com", "a-password-anna-picked")).not.toBeNull();
+	});
+
 	it("leaves a password the person chose themselves alone", async () => {
+		const app = createApp(db, SECRET);
 		const anna = seed("Anna");
 		changePassword(db, anna.id, anna.initialPassword, "a-password-anna-picked");
-		const token = (await issueMagicToken(db, anna.id, SECRET))!;
 
-		await consumeMagicToken(db, token, SECRET);
+		await followLink(app, anna.id);
 
-		// Only ever retires a password they never picked — following a link
-		// must not lock someone out of one they're actually using.
+		// Following a link must not disturb a password they're actually using.
 		expect(login(db, "anna@example.com", "a-password-anna-picked")).not.toBeNull();
 	});
 });

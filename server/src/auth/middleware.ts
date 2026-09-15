@@ -7,11 +7,12 @@ import { AuthVariables } from "./types.js";
 /** Requires a valid session cookie; otherwise responds 401 and short-circuits. Sets `personId` in context for downstream handlers. */
 export const requireAuth =
 	(authSecret: string) => async (c: Context<{ Variables: AuthVariables }>, next: Next) => {
-		const personId = await readSession(c, authSecret);
-		if (personId === null) {
+		const session = await readSession(c, authSecret);
+		if (session === null) {
 			return c.json({ error: "Not authenticated" }, 401);
 		}
-		c.set("personId", personId);
+		c.set("personId", session.personId);
+		c.set("viaMagicLink", session.viaMagicLink);
 		await next();
 	};
 

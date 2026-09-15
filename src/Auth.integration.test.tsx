@@ -23,6 +23,8 @@ interface StubAuthApiOptions {
 	startAuthenticated?: boolean;
 	/** Whether the session starts with a pending forced password change. */
 	mustChangePassword?: boolean;
+	/** False stands in for a session started by following an emailed login link. */
+	requiresCurrentPassword?: boolean;
 }
 
 /**
@@ -37,8 +39,11 @@ const stubAuthApi = ({
 	person = PERSON,
 	startAuthenticated = false,
 	mustChangePassword = true,
+	requiresCurrentPassword = true,
 }: StubAuthApiOptions = {}) => {
 	const state = { password, mustChangePassword, authenticated: startAuthenticated };
+	/** The bodies sent to change-password, for asserting on what was actually submitted. */
+	const changeRequests: { currentPassword?: string; newPassword: string }[] = [];
 
 	vi.stubGlobal(
 		"fetch",
@@ -68,7 +73,11 @@ const stubAuthApi = ({
 					return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 });
 				}
 				return new Response(
-					JSON.stringify({ person, mustChangePassword: state.mustChangePassword }),
+					JSON.stringify({
+						person,
+						mustChangePassword: state.mustChangePassword,
+						requiresCurrentPassword,
+					}),
 					{ status: 200 },
 				);
 			}
@@ -77,11 +86,15 @@ const stubAuthApi = ({
 				if (!state.authenticated) {
 					return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 });
 				}
-				const { currentPassword, newPassword } = (await request.json()) as {
-					currentPassword: string;
+				const body = (await request.json()) as {
+					currentPassword?: string;
 					newPassword: string;
 				};
-				if (currentPassword !== state.password) {
+				changeRequests.push(body);
+				const { currentPassword, newPassword } = body;
+				// Mirrors the server: the current password is checked unless this
+				// is someone setting their first one from a magic-link session.
+				if (requiresCurrentPassword && currentPassword !== state.password) {
 					return new Response(JSON.stringify({ error: "Current password is incorrect" }), {
 						status: 401,
 					});
@@ -107,7 +120,7 @@ const stubAuthApi = ({
 		}),
 	);
 
-	return state;
+	return { state, changeRequests };
 };
 
 afterEach(() => {
@@ -262,6 +275,40 @@ describe("admin access to the people-management page", () => {
 		// to prove the admin page itself rendered.
 		await screen.findByText("Add people");
 		expect(screen.getByRole("link", { name: "Manage people" })).not.toBeNull();
+	});
+});
+
+describe("arriving from a magic link with no password yet", () => {
+	it("is still sent to set a password, without being asked for the current one", async () => {
+		// What the server reports for a link-originated session belonging to
+		// someone who has never chosen a password.
+		const { changeRequests } = stubAuthApi({
+			startAuthenticated: true,
+			mustChangePassword: true,
+			requiresCurrentPassword: false,
+		});
+		const user = userEvent.setup();
+		renderAt("/account");
+
+		// Sent to set one, rather than straight through to their match...
+		await screen.findByText(/Pick a password/);
+		// ...and not asked for a password they have never had.
+		expect(screen.queryByLabelText("Current password")).toBeNull();
+
+		await user.type(screen.getByLabelText("New password"), "a-brand-new-password");
+		await user.type(screen.getByLabelText("Confirm new password"), "a-brand-new-password");
+		await user.click(screen.getByRole("button", { name: "Set password" }));
+
+		await screen.findByText("You haven't been matched yet — check back after the draw.");
+		expect(changeRequests).toEqual([{ newPassword: "a-brand-new-password" }]);
+	});
+
+	it("still asks for it when the session came from a password login", async () => {
+		stubAuthApi({ startAuthenticated: true, mustChangePassword: true });
+		renderAt("/account");
+
+		await screen.findByText("This is your first time logging in — please set a new password.");
+		expect(screen.getByLabelText("Current password")).not.toBeNull();
 	});
 });
 
