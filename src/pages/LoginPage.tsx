@@ -43,6 +43,10 @@ function LoginPage() {
 				authApi.util.upsertQueryData("me", undefined, {
 					person: result.person,
 					mustChangePassword: result.mustChangePassword,
+					// Always true for a password login: whoever just typed their
+					// current password can be asked for it again. Only a magic-link
+					// session gets to skip it — see the change-password route.
+					requiresCurrentPassword: true,
 				}),
 			);
 			navigate("/account");
