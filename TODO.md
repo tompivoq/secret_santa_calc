@@ -110,9 +110,8 @@ links from — it shouldn't hardcode the LAN address.
   these are single-use. Family webmail mostly doesn't, so this is a risk
   rather than a certainty — but if it bites, the fix is a landing page with
   a button that POSTs, instead of consuming on GET.
-- **No way back to password login once a link retires someone's initial
-  password.** Following a link replaces a never-chosen initial password
-  with an unusable one, so from then on that person is magic-link-only.
-  Fine on purpose — this is a once-a-year login — but there's no
-  self-service reset and no admin "resend password" either, so the only
-  route back in is another link.
+- **No self-service password reset.** Someone who sets a password and then
+  forgets it a year later can't recover it themselves — but in practice a
+  fresh magic link gets them in, and while they still have no password of
+  their own it even lets them set one. Only worth building if that stops
+  being enough.
