@@ -18,6 +18,16 @@ export const people = sqliteTable(
 		// little benefit at this scale) — reciprocity and validity are enforced
 		// in the people service instead.
 		partnerId: integer("partner_id"),
+		/**
+		 * Who this person gave to last year, when that happened outside this
+		 * app — set by hand, and only consulted for people the previous locked
+		 * draw has no answer for (see the matcher routes). Not reciprocal,
+		 * unlike partnerId: giving is directional.
+		 *
+		 * Same reasoning as partnerId for not being a DB-level foreign key;
+		 * removePerson clears references to a deleted person instead.
+		 */
+		lastYearRecipientId: integer("last_year_recipient_id"),
 		// Gates access to the people-management API (list/create/delete/partner)
 		// — see auth/middleware.ts. Not settable through the app itself; granted
 		// out-of-band via the set-admin script (server/src/scripts/set-admin.ts).

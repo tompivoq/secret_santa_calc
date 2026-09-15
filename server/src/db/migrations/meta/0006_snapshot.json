@@ -1,8 +1,8 @@
 {
 	"version": "6",
 	"dialect": "sqlite",
-	"id": "2224db07-fd82-42e4-8184-cb5213a69442",
-	"prevId": "3e9726fa-ef2e-4d2c-82f8-d846e3937b26",
+	"id": "8f25acf0-622c-4419-b088-1892ca73a8f4",
+	"prevId": "38313b5b-c4a1-4a9a-9ca5-c6896c87a964",
 	"tables": {
 		"assignments": {
 			"name": "assignments",
@@ -135,6 +135,14 @@
 					"primaryKey": false,
 					"notNull": false,
 					"autoincrement": false
+				},
+				"blind": {
+					"name": "blind",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"autoincrement": false,
+					"default": true
 				}
 			},
 			"indexes": {},
@@ -176,6 +184,13 @@
 				},
 				"partner_id": {
 					"name": "partner_id",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"autoincrement": false
+				},
+				"last_year_recipient_id": {
+					"name": "last_year_recipient_id",
 					"type": "integer",
 					"primaryKey": false,
 					"notNull": false,

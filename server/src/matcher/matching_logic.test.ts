@@ -7,6 +7,9 @@ const person = (id: number, partnerId: number | null = null): MatchingPerson => 
 	email: `person${id}@example.com`,
 	phone: 22334455,
 	partnerId,
+	// Irrelevant here: the matching takes last year's pairings as an
+	// argument rather than reading them off the person — see doMatching.
+	lastYearRecipientId: null,
 	isAdmin: false,
 	hasMatch: false,
 	currentTarget: null,

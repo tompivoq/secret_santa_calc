@@ -49,14 +49,54 @@ export const addPerson = (db: Db, input: NewPerson): CreatedPerson =>
 		return { ...person, initialPassword };
 	});
 
-/** Removes a person, clearing the reciprocal link on their former partner, if any. */
+/**
+ * Removes a person, clearing the reciprocal link on their former partner
+ * and any manually-set "gave to them last year" reference, so no one is
+ * left pointing at someone who no longer exists.
+ */
 export const removePerson = (db: Db, personId: number) =>
 	db.transaction((tx) => {
 		const former = tx.select().from(people).where(eq(people.partnerId, personId)).all();
 		for (const person of former) {
 			tx.update(people).set({ partnerId: null }).where(eq(people.id, person.id)).run();
 		}
+		tx.update(people)
+			.set({ lastYearRecipientId: null })
+			.where(eq(people.lastYearRecipientId, personId))
+			.run();
 		tx.delete(people).where(eq(people.id, personId)).run();
+	});
+
+/**
+ * Records who `personId` gave to last year, for a draw that happened
+ * outside this app — or clears it, when `recipientId` is null. Returns
+ * false (and does nothing) if either person isn't real, or if asked to
+ * point someone at themselves.
+ *
+ * Unlike setPartner this is one-directional and sets nothing on the
+ * recipient: whoever gave to *them* last year is a separate fact.
+ */
+export const setLastYearRecipient = (
+	db: Db,
+	personId: number,
+	recipientId: number | null,
+): boolean =>
+	db.transaction((tx) => {
+		if (recipientId === personId) {
+			return false;
+		}
+		if (!tx.select().from(people).where(eq(people.id, personId)).get()) {
+			return false;
+		}
+		if (recipientId !== null && !tx.select().from(people).where(eq(people.id, recipientId)).get()) {
+			return false;
+		}
+
+		tx.update(people)
+			.set({ lastYearRecipientId: recipientId })
+			.where(eq(people.id, personId))
+			.run();
+		return true;
 	});
 
 /**

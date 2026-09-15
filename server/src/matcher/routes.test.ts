@@ -5,7 +5,12 @@ import { createApp } from "../app.js";
 import { createDb, type Db } from "../db/client.js";
 import { migrationsFolder } from "../db/migrate.js";
 import { people } from "../db/schema.js";
-import { addPerson, setPartner, type CreatedPerson } from "../people/people.js";
+import {
+	addPerson,
+	setLastYearRecipient,
+	setPartner,
+	type CreatedPerson,
+} from "../people/people.js";
 import { asPairs, getLatestLockedDraw, hasDraft, lockDraft, saveDraft } from "./draws.js";
 
 let db: Db;
@@ -256,6 +261,72 @@ describe("avoiding last year's pairings", () => {
 				[bjorn.id, anna.id],
 			]),
 		);
+	});
+
+	it("uses a manually-set last-year match when there's no previous draw", async () => {
+		const cookie = await asAdmin();
+		const [anna, bjorn, carl] = [seed("Anna"), seed("Bjørn"), seed("Carl")];
+		// The bootstrapping case: last year happened elsewhere, so the only
+		// record of it is what the admin typed in.
+		setLastYearRecipient(db, anna.id, bjorn.id);
+
+		const body = (await (
+			await postDraft([anna.id, bjorn.id, carl.id], cookie)
+		).json()) as DraftBody;
+
+		const annas = body.draw.assignments.find((a) => a.giverId === anna.id)!;
+		expect(annas.recipientId).toBe(carl.id);
+	});
+
+	it("prefers the previous draw over a stale manual value", async () => {
+		const cookie = await asAdmin();
+		const [anna, bjorn, carl] = [seed("Anna"), seed("Bjørn"), seed("Carl")];
+		// Anna gave to Bjørn two years ago (typed in), and to Carl last year
+		// (drawn here). Only the latter is actually last year.
+		setLastYearRecipient(db, anna.id, bjorn.id);
+		saveDraft(
+			db,
+			new Map([
+				[anna.id, carl.id],
+				[carl.id, bjorn.id],
+				[bjorn.id, anna.id],
+			]),
+		);
+		lockDraft(db);
+
+		const body = (await (
+			await postDraft([anna.id, bjorn.id, carl.id], cookie, { startOver: true })
+		).json()) as DraftBody;
+
+		// So she avoids Carl and is free to draw Bjørn again. Preferring the
+		// manual value would have had this exactly backwards.
+		const annas = body.draw.assignments.find((a) => a.giverId === anna.id)!;
+		expect(annas.recipientId).toBe(bjorn.id);
+	});
+
+	it("falls back to a manual value for someone the previous draw didn't cover", async () => {
+		const cookie = await asAdmin();
+		const [anna, bjorn, carl] = [seed("Anna"), seed("Bjørn"), seed("Carl")];
+		const dina = seed("Dina");
+		// Dina joined after the last draw, so it says nothing about her —
+		// her manual value is the only thing that does.
+		setLastYearRecipient(db, dina.id, anna.id);
+		saveDraft(
+			db,
+			new Map([
+				[anna.id, bjorn.id],
+				[bjorn.id, carl.id],
+				[carl.id, anna.id],
+			]),
+		);
+		lockDraft(db);
+
+		const body = (await (
+			await postDraft([anna.id, bjorn.id, carl.id, dina.id], cookie, { startOver: true })
+		).json()) as DraftBody;
+
+		const dinas = body.draw.assignments.find((a) => a.giverId === dina.id)!;
+		expect(dinas.recipientId).not.toBe(anna.id);
 	});
 
 	it("reports no repeats when there was no previous draw to repeat", async () => {

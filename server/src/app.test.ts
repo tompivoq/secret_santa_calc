@@ -177,6 +177,15 @@ describe("/api/people authorization", () => {
 				})
 			).status,
 		).toBe(401);
+		expect(
+			(
+				await app.request("/api/people/1/last-year", {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ lastYearRecipientId: null }),
+				})
+			).status,
+		).toBe(401);
 	});
 
 	it("returns 403 for every route when logged in as a non-admin", async () => {
@@ -203,6 +212,15 @@ describe("/api/people authorization", () => {
 					method: "PUT",
 					headers: { "Content-Type": "application/json", cookie },
 					body: JSON.stringify({ partnerId: null }),
+				})
+			).status,
+		).toBe(403);
+		expect(
+			(
+				await app.request(`/api/people/${anna.id}/last-year`, {
+					method: "PUT",
+					headers: { "Content-Type": "application/json", cookie },
+					body: JSON.stringify({ lastYearRecipientId: null }),
 				})
 			).status,
 		).toBe(403);
@@ -236,6 +254,16 @@ describe("/api/people authorization", () => {
 					method: "PUT",
 					headers: { "Content-Type": "application/json", cookie },
 					body: JSON.stringify({ partnerId: admin.id }),
+				})
+			).status,
+		).toBe(204);
+
+		expect(
+			(
+				await app.request(`/api/people/${created.id}/last-year`, {
+					method: "PUT",
+					headers: { "Content-Type": "application/json", cookie },
+					body: JSON.stringify({ lastYearRecipientId: admin.id }),
 				})
 			).status,
 		).toBe(204);

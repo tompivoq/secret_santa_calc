@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { addPerson, listPeople, removePerson, setPartner } from "./people.js";
+import { addPerson, listPeople, removePerson, setLastYearRecipient, setPartner } from "./people.js";
 import { createDb, type Db } from "../db/client.js";
 import { migrationsFolder } from "../db/migrate.js";
 
@@ -133,5 +133,65 @@ describe("removePerson", () => {
 		removePerson(db, bjorn.id);
 
 		expect(listPeople(db).find((p) => p.id === anna.id)?.partnerId).toBeNull();
+	});
+});
+
+describe("setLastYearRecipient", () => {
+	it("records who someone gave to last year", () => {
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+
+		expect(setLastYearRecipient(db, anna.id, bjorn.id)).toBe(true);
+
+		expect(listPeople(db).find((p) => p.id === anna.id)?.lastYearRecipientId).toBe(bjorn.id);
+	});
+
+	it("sets nothing on the recipient — giving is one-directional", () => {
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+
+		setLastYearRecipient(db, anna.id, bjorn.id);
+
+		// Who gave to Bjørn last year is a separate fact, not the mirror of this.
+		expect(listPeople(db).find((p) => p.id === bjorn.id)?.lastYearRecipientId).toBeNull();
+	});
+
+	it("clears it when given null", () => {
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+		setLastYearRecipient(db, anna.id, bjorn.id);
+
+		expect(setLastYearRecipient(db, anna.id, null)).toBe(true);
+
+		expect(listPeople(db).find((p) => p.id === anna.id)?.lastYearRecipientId).toBeNull();
+	});
+
+	it("refuses to point someone at themselves", () => {
+		const anna = seed("Anna");
+
+		expect(setLastYearRecipient(db, anna.id, anna.id)).toBe(false);
+
+		expect(listPeople(db).find((p) => p.id === anna.id)?.lastYearRecipientId).toBeNull();
+	});
+
+	it("refuses a recipient who doesn't exist", () => {
+		const anna = seed("Anna");
+		expect(setLastYearRecipient(db, anna.id, 999_999)).toBe(false);
+	});
+
+	it("refuses to set it on someone who doesn't exist", () => {
+		const anna = seed("Anna");
+		expect(setLastYearRecipient(db, 999_999, anna.id)).toBe(false);
+	});
+
+	it("is cleared on everyone pointing at a person who gets removed", () => {
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+		setLastYearRecipient(db, anna.id, bjorn.id);
+
+		removePerson(db, bjorn.id);
+
+		// Rather than leaving Anna pointing at someone who no longer exists.
+		expect(listPeople(db).find((p) => p.id === anna.id)?.lastYearRecipientId).toBeNull();
 	});
 });

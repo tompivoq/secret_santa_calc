@@ -5,7 +5,7 @@ import { AuthVariables } from "../auth/types.js";
 import type { Db } from "../db/client.js";
 import { requireAdmin, requireAuth } from "../auth/middleware.js";
 import { getPeopleByIds } from "../people/people.js";
-import { doMatching, type MatchingPerson } from "./matching_logic.js";
+import { doMatching, type MatchingPerson, type PreviousPairs } from "./matching_logic.js";
 import {
 	asPairs,
 	getCurrentDraw,
@@ -78,9 +78,31 @@ interface DraftResult {
  * them rather than telling the admin a perfectly matchable group is
  * impossible — reporting *that* it fell back is the honest middle ground.
  */
-const runDraft = (db: Db, people: MatchingPerson[], blind: boolean): DraftResult | null => {
+/**
+ * What everyone gave last year, as far as this app can tell: the previous
+ * locked draw, with each person's manually-set value filling in where it
+ * has no answer for them.
+ *
+ * That precedence matters. A manual value is what happened *before* this
+ * app was keeping track, so once there's a real draw covering someone, it
+ * would be a year out of date — and preferring it would have them avoid
+ * the wrong person while leaving them free to repeat the right one.
+ */
+const lastYearsPairs = (db: Db, people: MatchingPerson[]): PreviousPairs => {
 	const previous = getLatestLockedDraw(db);
-	const withoutRepeats = previous ? doMatching(people, asPairs(previous)) : null;
+	const pairs = previous ? asPairs(previous) : new Map<number, number>();
+
+	for (const person of people) {
+		if (!pairs.has(person.id) && person.lastYearRecipientId !== null) {
+			pairs.set(person.id, person.lastYearRecipientId);
+		}
+	}
+	return pairs;
+};
+
+const runDraft = (db: Db, people: MatchingPerson[], blind: boolean): DraftResult | null => {
+	const previous = lastYearsPairs(db, people);
+	const withoutRepeats = previous.size > 0 ? doMatching(people, previous) : null;
 	const matched = withoutRepeats ?? doMatching(people);
 	if (!matched) {
 		return null;
@@ -89,7 +111,7 @@ const runDraft = (db: Db, people: MatchingPerson[], blind: boolean): DraftResult
 	const pairs = new Map(matched.map((person) => [person.id, person.currentTarget!]));
 	return {
 		draw: forAdmin(saveDraft(db, pairs, blind)),
-		repeatedLastYear: previous !== null && withoutRepeats === null,
+		repeatedLastYear: previous.size > 0 && withoutRepeats === null,
 	};
 };
 
