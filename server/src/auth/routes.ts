@@ -19,7 +19,13 @@ const changePasswordSchema = z.object({
 	newPassword: z.string().min(8),
 });
 
-export const getRoutes = (db: Db, authSecret: string) =>
+/**
+ * `appBaseUrl` prefixes the post-link redirects. Empty (the default in
+ * tests) leaves them root-relative, which is right when the app is served
+ * from the root of its own host; under a path prefix it's what keeps
+ * "/account" from meaning the wrong thing.
+ */
+export const getRoutes = (db: Db, authSecret: string, appBaseUrl = "") =>
 	new Hono<{ Variables: AuthVariables }>()
 		.post("/login", zValidator("json", loginSchema), async (c) => {
 			const { email, password } = c.req.valid("json");
@@ -40,10 +46,10 @@ export const getRoutes = (db: Db, authSecret: string) =>
 		.get("/magic/:token", async (c) => {
 			const personId = await consumeMagicToken(db, c.req.param("token"), authSecret);
 			if (personId === null) {
-				return c.redirect("/login?error=link-expired", 303);
+				return c.redirect(`${appBaseUrl}/login?error=link-expired`, 303);
 			}
 			await createSession(c, personId, authSecret);
-			return c.redirect("/account", 303);
+			return c.redirect(`${appBaseUrl}/account`, 303);
 		})
 		.get("/me", requireAuth(authSecret), (c) => {
 			const personId = c.get("personId");

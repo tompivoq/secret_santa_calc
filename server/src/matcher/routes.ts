@@ -6,6 +6,8 @@ import type { Db } from "../db/client.js";
 import { requireAdmin, requireAuth } from "../auth/middleware.js";
 import { getPeopleByIds } from "../people/people.js";
 import { doMatching, type MatchingPerson, type PreviousPairs } from "./matching_logic.js";
+import { notifyParticipants } from "./notify.js";
+import type { Mailer } from "../mail/mailer.js";
 import {
 	asPairs,
 	getCurrentDraw,
@@ -36,6 +38,14 @@ const draftRequestSchema = z.object({
 	blind: z.boolean().default(true),
 });
 
+const notifyRequestSchema = z.object({
+	/**
+	 * Who to email. Omitted means everyone in the locked draw who hasn't
+	 * been told yet; naming people re-sends to exactly those.
+	 */
+	personIds: z.array(z.int()).min(1).optional(),
+});
+
 /**
  * A draw as the admin is allowed to see it. Who took part is always shown
  * — it's their own selection back again, and they need it to tell a draw
@@ -48,6 +58,11 @@ interface AdminDraw {
 	lockedAt: Date | null;
 	blind: boolean;
 	participantIds: number[];
+	/**
+	 * Who has been emailed their link so far. Safe to show for a blind draw
+	 * too — that someone was written to says nothing about who they drew.
+	 */
+	notifiedIds: number[];
 	assignments?: Draw["assignments"];
 }
 
@@ -57,6 +72,9 @@ const forAdmin = (draw: Draw): AdminDraw => ({
 	lockedAt: draw.lockedAt,
 	blind: draw.blind,
 	participantIds: draw.assignments.map((assignment) => assignment.giverId),
+	notifiedIds: draw.assignments
+		.filter((assignment) => assignment.notifiedAt !== null)
+		.map((assignment) => assignment.giverId),
 	// Not merely unrendered by the client — a blind draw's pairings never
 	// leave the server, so there's nothing to find in the network tab either.
 	...(draw.blind ? {} : { assignments: draw.assignments }),
@@ -119,7 +137,12 @@ const runDraft = (db: Db, people: MatchingPerson[], blind: boolean): DraftResult
 // the people-management API — see people/routes.ts for the same reasoning.
 // requireAdmin is applied per-route rather than to "*" so that routes every
 // signed-in person may reach can sit alongside these later.
-export const getRoutes = (db: Db, authSecret: string) =>
+export interface MatcherOptions {
+	mailer: Mailer;
+	appBaseUrl: string;
+}
+
+export const getRoutes = (db: Db, authSecret: string, { mailer, appBaseUrl }: MatcherOptions) =>
 	new Hono<{ Variables: AuthVariables }>()
 		.use("*", requireAuth(authSecret))
 		.get("/current", requireAdmin(db), (c) => {
@@ -159,6 +182,17 @@ export const getRoutes = (db: Db, authSecret: string) =>
 				return c.json({ error: "There is no draft to lock in" }, 409);
 			}
 			return c.json(forAdmin(locked));
+		})
+		.post("/notify", requireAdmin(db), zValidator("json", notifyRequestSchema), async (c) => {
+			const { personIds } = c.req.valid("json");
+			const result = await notifyParticipants(db, mailer, authSecret, appBaseUrl, { personIds });
+			if (!result) {
+				return c.json({ error: "There is no locked-in draw to notify anyone about" }, 409);
+			}
+			// 200 even with failures in it: some people were emailed and some
+			// weren't, and the admin needs to see which is which rather than a
+			// single verdict over the whole batch.
+			return c.json(result);
 		})
 		// The one route here that isn't admin-only: anyone signed in can see
 		// their own match, and only ever their own — never the whole draw, and

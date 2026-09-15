@@ -117,6 +117,16 @@ export const assignments = sqliteTable("assignments", {
 	recipientId: integer("recipient_id")
 		.notNull()
 		.references(() => people.id, { onDelete: "cascade" }),
+	/**
+	 * When this person was emailed that their match is ready. Null until
+	 * they have been.
+	 *
+	 * Per assignment rather than per person on purpose: a re-draw creates
+	 * fresh rows, so everyone correctly reads as un-notified again, and the
+	 * admin can see at a glance who still needs telling that their match
+	 * changed.
+	 */
+	notifiedAt: integer("notified_at", { mode: "timestamp" }),
 });
 
 export type AssignmentRow = typeof assignments.$inferSelect;
