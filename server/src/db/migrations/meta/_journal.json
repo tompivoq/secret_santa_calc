@@ -29,6 +29,27 @@
 			"when": 1788509344428,
 			"tag": "0003_bent_nebula",
 			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "6",
+			"when": 1789463939071,
+			"tag": "0004_calm_ares",
+			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "6",
+			"when": 1789465554348,
+			"tag": "0005_natural_whistler",
+			"breakpoints": true
+		},
+		{
+			"idx": 6,
+			"version": "6",
+			"when": 1789466208476,
+			"tag": "0006_tiny_wong",
+			"breakpoints": true
 		}
 	]
 }

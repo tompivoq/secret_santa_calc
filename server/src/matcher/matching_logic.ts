@@ -5,35 +5,56 @@ export interface MatchingPerson extends PersonRow {
 	currentTarget?: number | null;
 }
 
+/**
+ * Giver id → the recipient they already had in the previous locked draw.
+ * Passed in rather than read from the person: who someone gave to last
+ * time is a fact about that draw, not about them.
+ */
+export type PreviousPairs = Map<number, number>;
+
 /** Whether `giver` is allowed to be matched to give a gift to `receiver`. */
-const canGiveTo = (giver: MatchingPerson, receiver: MatchingPerson): boolean =>
-	giver.id !== receiver.id && giver.partnerId !== receiver.id;
-// Not wired up yet — `last_year_recipient` isn't a real column (see
-// TODO.md), but once it is, it's one more clause here:
-// && giver.lastYearRecipientId !== receiver.id
+const canGiveTo = (
+	giver: MatchingPerson,
+	receiver: MatchingPerson,
+	previous: PreviousPairs,
+): boolean =>
+	giver.id !== receiver.id &&
+	giver.partnerId !== receiver.id &&
+	previous.get(giver.id) !== receiver.id;
+
+const NO_PREVIOUS: PreviousPairs = new Map();
 
 /**
- * Assigns every person a valid recipient (excluding themselves and their
- * partner), or returns null if no valid assignment exists at all.
+ * Assigns every person a valid recipient — never themselves, their
+ * partner, or (when `previous` is given) whoever they gave to in the last
+ * draw. Returns null if no such assignment exists at all.
  *
  * Uses backtracking rather than "generate a random full assignment, and
  * restart from scratch if anyone gets stuck": a dead end only costs one
  * step back, not the whole search, and — critically — nothing is written
  * to `people` until a complete, verified-valid assignment is found. There
  * is no partial/discarded state left lying around to leak into a retry.
+ *
+ * Note that avoiding last year's pairings can make an otherwise-fine group
+ * unsolvable, so callers are expected to retry without `previous` and tell
+ * the admin, rather than reporting a group of perfectly matchable people as
+ * impossible — see runDraft in routes.ts.
  */
-export const doMatching = (people: MatchingPerson[]): MatchingPerson[] | null => {
+export const doMatching = (
+	people: MatchingPerson[],
+	previous: PreviousPairs = NO_PREVIOUS,
+): MatchingPerson[] | null => {
 	// Fail fast, with a clear reason, instead of only discovering
 	// infeasibility after exhausting a search that could never succeed —
 	// e.g. two people whose only allowed recipient is each other's partner.
 	const withoutCandidates = people.filter(
-		(giver) => !people.some((receiver) => canGiveTo(giver, receiver)),
+		(giver) => !people.some((receiver) => canGiveTo(giver, receiver, previous)),
 	);
 	if (withoutCandidates.length > 0) {
 		return null;
 	}
 
-	const assignments = assign(people, people);
+	const assignments = assign(people, people, previous);
 	if (!assignments) {
 		return null;
 	}
@@ -55,17 +76,18 @@ export const doMatching = (people: MatchingPerson[]): MatchingPerson[] | null =>
 const assign = (
 	givers: MatchingPerson[],
 	remaining: MatchingPerson[],
+	previous: PreviousPairs,
 ): Map<number, number> | null => {
 	if (givers.length === 0) {
 		return new Map();
 	}
 
 	const giver = givers[0]!;
-	const candidates = shuffled(remaining.filter((receiver) => canGiveTo(giver, receiver)));
+	const candidates = shuffled(remaining.filter((receiver) => canGiveTo(giver, receiver, previous)));
 
 	for (const receiver of candidates) {
 		const rest = remaining.filter((person) => person.id !== receiver.id);
-		const result = assign(givers.slice(1), rest);
+		const result = assign(givers.slice(1), rest, previous);
 		if (result) {
 			result.set(giver.id, receiver.id);
 			return result;

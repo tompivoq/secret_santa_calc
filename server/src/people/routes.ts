@@ -2,7 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { requireAuth, requireAdmin } from "../auth/middleware.js";
 import { AuthVariables } from "../auth/types.js";
-import { listPeople, addPerson, removePerson, setPartner } from "./people.js";
+import { listPeople, addPerson, removePerson, setPartner, setLastYearRecipient } from "./people.js";
 import { z } from "zod";
 import type { Db } from "../db/client.js";
 
@@ -15,6 +15,10 @@ const newPersonSchema = z.object({
 
 const partnerSchema = z.object({
 	partnerId: z.number().int().nullable(),
+});
+
+const lastYearSchema = z.object({
+	lastYearRecipientId: z.number().int().nullable(),
 });
 
 /** A better-sqlite3 error raised by a UNIQUE constraint (e.g. a duplicate email). */
@@ -55,6 +59,17 @@ export const getRoutes = (db: Db, authSecret: string) =>
 			const ok = setPartner(db, id, c.req.valid("json").partnerId);
 			if (!ok) {
 				return c.json({ error: "No such person, or invalid partner" }, 400);
+			}
+			return c.body(null, 204);
+		})
+		.put("/:id/last-year", zValidator("json", lastYearSchema), (c) => {
+			const id = Number(c.req.param("id"));
+			if (!Number.isInteger(id)) {
+				return c.json({ error: "Invalid id" }, 400);
+			}
+			const ok = setLastYearRecipient(db, id, c.req.valid("json").lastYearRecipientId);
+			if (!ok) {
+				return c.json({ error: "No such person, or invalid recipient" }, 400);
 			}
 			return c.body(null, 204);
 		});

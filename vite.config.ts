@@ -30,6 +30,6 @@ export default defineConfig({
 		useTabs: true,
 		// Claude Code owns the formatting of its own settings file; don't
 		// fight it by reformatting there too.
-		ignorePatterns: [".claude/settings.json"],
+		ignorePatterns: [".claude/settings.json", "TODO.md"],
 	},
 });

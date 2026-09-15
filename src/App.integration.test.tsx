@@ -76,6 +76,20 @@ const stubPeopleApi = () => {
 				});
 			}
 
+			const lastYearMatch = /^\/api\/people\/(\d+)\/last-year$/.exec(url.pathname);
+			if (lastYearMatch && request.method === "PUT") {
+				const { lastYearRecipientId } = (await request.json()) as {
+					lastYearRecipientId: number | null;
+				};
+				const person = people.find((p) => p.id === Number(lastYearMatch[1]));
+				if (person) {
+					// One-directional, as the real server is — nothing is set on
+					// the recipient.
+					person.lastYearRecipientId = lastYearRecipientId;
+				}
+				return new Response(null, { status: 204 });
+			}
+
 			return new Response(null, { status: 204 });
 		}),
 	);
@@ -161,5 +175,26 @@ describe("App: renders people and their partners as returned by the API", () => 
 			selector: "#partner-2",
 		}) as HTMLSelectElement;
 		expect(annaPartnerSelect.value).toBe("1");
+	});
+
+	it("records last year's match for one person, without touching the other", async () => {
+		const people = stubPeopleApi();
+		const user = userEvent.setup();
+		renderApp();
+
+		await addPerson(user, "Bjørn", "bjorn@example.com", "11223344");
+		await addPerson(user, "Anna", "anna@example.com", "22334455");
+
+		await user.selectOptions(
+			await screen.findByLabelText("Last year", { selector: "#last-year-2" }),
+			"Bjørn",
+		);
+
+		// Anna gave to Bjørn last year. Who gave to *her* is a separate fact,
+		// so unlike a partner link this sets nothing on Bjørn.
+		await waitFor(() => {
+			expect(people.find((p) => p.name === "Anna")?.lastYearRecipientId).toBe(1);
+		});
+		expect(people.find((p) => p.name === "Bjørn")?.lastYearRecipientId).toBeUndefined();
 	});
 });

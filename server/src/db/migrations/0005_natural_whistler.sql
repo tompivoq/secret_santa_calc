@@ -1,0 +1,1 @@
+ALTER TABLE `draws` ADD `blind` integer DEFAULT true NOT NULL;

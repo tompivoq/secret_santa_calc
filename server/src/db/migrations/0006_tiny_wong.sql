@@ -1,0 +1,1 @@
+ALTER TABLE `people` ADD `last_year_recipient_id` integer;

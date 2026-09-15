@@ -2,16 +2,34 @@
 
 Not scheduled — just notes to come back to.
 
+## Leftovers from the matching/draw feature
+
+The draw itself is done — drafted, re-rollable, locked in, stored, shown
+to each person, and avoiding last year's pairings. What's left is small:
+
+- **Manual last-year values go stale silently.** They're only consulted for
+  people the previous locked draw has no answer for, so after the first
+  draw in this app they stop mattering for anyone who took part — correct,
+  but nothing in the UI says so. Worth a note next to the dropdown if it
+  ever causes confusion.
+- **Nobody can see a past draw.** Locked draws accumulate as history (which
+  is what repeat-avoidance reads), but there's no way to look at last
+  year's. Only worth building if you ever actually want it.
+- **Re-drawing after locking changes matches silently.** The admin has to
+  confirm, but anyone who already saw their match isn't told it changed.
+  The notification email below is the natural place to handle that.
+
 ## Match-notification email
 
-Once the matching/draw feature exists (assigns each person a recipient —
-doesn't exist yet either, see below), send an email letting each person know
-their match is ready to view.
+Nothing built yet, and now the only substantial thing left. Send each
+person an email letting them know their match is ready to view — the
+assignment it refers to now exists and is stored, so this is unblocked.
 
 **1. What triggers the send**
 
-- Natural hook: right after the admin runs the draw, either as part of that
-  same action or a separate "notify everyone" button.
+- Natural hook: right after the admin locks in the draw (`POST
+  /api/matcher/lock`), either as part of that same action or a separate
+  "notify everyone" button.
 - Track a `notifiedAt` timestamp per person regardless of when this gets
   built, so it's possible to:
   - avoid double-sending if the button is clicked twice
@@ -62,24 +80,9 @@ their match is ready to view.
 
 **5. Nice-to-haves worth designing in from the start**
 
-- Dry-run/preview mode in the admin UI — render the emails without sending,
-  to sanity-check wording and the recipient list before it goes out to the
-  whole family.
+- Preview the emails without sending, to sanity-check wording and the
+  recipient list before it goes out to the whole family — the same
+  draft-then-commit shape the draw itself already has.
 - Skip (or nudge first) anyone still sitting on their initial,
   never-confirmed password when the draw runs — get them logged in and
   their password set _before_ the draw, not after.
-
-## Matching/draw feature
-
-Doesn't exist yet — the app currently only manages people and their partner
-(couple) links. Needed before "who am I matched with" or the email above
-mean anything:
-
-- Randomly assign each person a recipient, excluding their own partner
-  (and presumably not assigning someone to themselves).
-- Decide whether to also exclude last year's assignment
-  (`last_year_recipient` exists as a vestigial field on the `Person` model
-  today but isn't wired up to anything).
-- Store the result somewhere (`assignments` table: `giverId` / `recipientId`
-  / maybe `year`), admin-triggered ("run the draw"), probably re-runnable
-  until "locked in."
