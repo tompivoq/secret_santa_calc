@@ -27,6 +27,12 @@ export interface DraftRequest {
 	startOver?: boolean;
 }
 
+export interface MyMatch {
+	/** Null until a draw has been locked in that this person was part of. */
+	recipient: { id: number; name: string } | null;
+	drawnAt?: string;
+}
+
 export const matcherApi = createApi({
 	reducerPath: "matcherApi",
 	// See peopleApi.ts for why this is resolved against window.location.origin
@@ -50,7 +56,15 @@ export const matcherApi = createApi({
 			query: () => ({ url: "lock", method: "POST" }),
 			invalidatesTags: ["Draw"],
 		}),
+		// The signed-in person's own match. Tagged alongside the admin's view
+		// so that locking a draw in refreshes this too, rather than leaving an
+		// admin who's also a participant looking at a stale "not matched yet".
+		myMatch: builder.query<MyMatch, void>({
+			query: () => "mine",
+			providesTags: ["Draw"],
+		}),
 	}),
 });
 
-export const { useCurrentDrawQuery, useDraftMutation, useLockDrawMutation } = matcherApi;
+export const { useCurrentDrawQuery, useDraftMutation, useLockDrawMutation, useMyMatchQuery } =
+	matcherApi;

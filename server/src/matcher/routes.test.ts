@@ -262,6 +262,105 @@ describe("avoiding last year's pairings", () => {
 	});
 });
 
+describe("GET /api/matcher/mine", () => {
+	const getMine = (cookie?: string) =>
+		app.request("/api/matcher/mine", { headers: { ...(cookie && { cookie }) } });
+
+	interface MineBody {
+		recipient: { id: number; name: string } | null;
+	}
+
+	const seedTrio = async () => {
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+		const carl = seed("Carl");
+		const cookie = await loginAs("anna@example.com", anna.initialPassword);
+		return { anna, bjorn, carl, cookie };
+	};
+
+	it("returns 401 without a session", async () => {
+		expect((await getMine()).status).toBe(401);
+	});
+
+	it("is open to non-admins — it's their own match", async () => {
+		const { anna, bjorn, carl, cookie } = await seedTrio();
+		saveDraft(
+			db,
+			new Map([
+				[anna.id, bjorn.id],
+				[bjorn.id, carl.id],
+				[carl.id, anna.id],
+			]),
+		);
+		lockDraft(db);
+
+		const res = await getMine(cookie);
+
+		expect(res.status).toBe(200);
+		expect(((await res.json()) as MineBody).recipient).toEqual({ id: bjorn.id, name: "Bjørn" });
+	});
+
+	it("says nothing before a draw has been locked in", async () => {
+		const { cookie } = await seedTrio();
+		const res = await getMine(cookie);
+
+		expect(res.status).toBe(200);
+		expect(((await res.json()) as MineBody).recipient).toBeNull();
+	});
+
+	it("does not leak a draft — only a locked draw counts", async () => {
+		const { anna, bjorn, carl, cookie } = await seedTrio();
+		saveDraft(
+			db,
+			new Map([
+				[anna.id, bjorn.id],
+				[bjorn.id, carl.id],
+				[carl.id, anna.id],
+			]),
+		);
+
+		// Drafted but not locked: the admin is still free to re-roll this, so
+		// telling Anna now could tell her something that never happens.
+		expect(((await (await getMine(cookie)).json()) as MineBody).recipient).toBeNull();
+	});
+
+	it("only ever reveals the caller's own recipient", async () => {
+		const { anna, bjorn, carl, cookie } = await seedTrio();
+		saveDraft(
+			db,
+			new Map([
+				[anna.id, bjorn.id],
+				[bjorn.id, carl.id],
+				[carl.id, anna.id],
+			]),
+		);
+		lockDraft(db);
+
+		const body = (await (await getMine(cookie)).json()) as MineBody;
+
+		// Anna's own pairing, and nothing about who Bjørn or Carl drew.
+		expect(body.recipient).toEqual({ id: bjorn.id, name: "Bjørn" });
+		expect(JSON.stringify(body)).not.toContain("Carl");
+	});
+
+	it("says nothing for someone who wasn't in the draw", async () => {
+		const { anna, bjorn, carl } = await seedTrio();
+		const dina = seed("Dina");
+		const dinaCookie = await loginAs("dina@example.com", dina.initialPassword);
+		saveDraft(
+			db,
+			new Map([
+				[anna.id, bjorn.id],
+				[bjorn.id, carl.id],
+				[carl.id, anna.id],
+			]),
+		);
+		lockDraft(db);
+
+		expect(((await (await getMine(dinaCookie)).json()) as MineBody).recipient).toBeNull();
+	});
+});
+
 describe("GET /api/matcher/current", () => {
 	it("returns null before any draw has been run", async () => {
 		const cookie = await asAdmin();

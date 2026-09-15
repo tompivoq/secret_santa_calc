@@ -10,6 +10,7 @@ import {
 	asPairs,
 	getCurrentDraw,
 	getLatestLockedDraw,
+	getLockedRecipientFor,
 	hasDraft,
 	hasLockedDraw,
 	lockDraft,
@@ -96,4 +97,24 @@ export const getRoutes = (db: Db, authSecret: string) =>
 				return c.json({ error: "There is no draft to lock in" }, 409);
 			}
 			return c.json(locked);
+		})
+		// The one route here that isn't admin-only: anyone signed in can see
+		// their own match, and only ever their own — never the whole draw, and
+		// never a draft (getLockedRecipientFor reads locked draws only).
+		.get("/mine", (c) => {
+			const match = getLockedRecipientFor(db, c.get("personId"));
+			if (!match) {
+				return c.json({ recipient: null });
+			}
+
+			const recipient = getPeopleByIds(db, [match.recipientId])[0];
+			if (!recipient) {
+				return c.json({ recipient: null });
+			}
+			// Just the name: which of the others it is, is the whole point, and
+			// their email/phone is no more this person's business than before.
+			return c.json({
+				recipient: { id: recipient.id, name: recipient.name },
+				drawnAt: match.drawnAt,
+			});
 		});
