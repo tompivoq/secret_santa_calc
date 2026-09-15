@@ -11,7 +11,7 @@ function App() {
 	return (
 		<BrowserRouter>
 			<TopBarNav />
-			<main className="mx-auto max-w-4xl pt-2 px-6 pb-12 text-center">
+			<main className="mx-auto max-w-4xl px-6 pt-2 pb-12 text-center">
 				<Routes>
 					<Route
 						path="/"

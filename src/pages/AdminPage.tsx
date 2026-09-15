@@ -3,7 +3,7 @@ import PersonForm from "../components/PersonForm";
 import PersonList from "../components/PersonList";
 import MatchRunner from "../components/MatchRunner";
 import { useGetPeopleQuery } from "../store/peopleApi";
-import { FaChevronDown } from "react-icons/fa6";
+import { FaChevronRight } from "react-icons/fa6";
 
 function AdminPage() {
 	const [formOpen, setFormOpen] = useState(false);
@@ -37,12 +37,15 @@ function AdminPage() {
 			<p>Enter a list of people and randomly assign each one a secret santa.</p>
 
 			<div className="flex h-fit flex-col rounded-xl border border-gray-400 p-5 transition-[height] duration-300 ease-in-out">
-				<div className="flex flex-row items-center" onClick={() => setFormOpen((prev) => !prev)}>
-					<h3 className="flex grow text-lg">Add people</h3>
-					<FaChevronDown
+				<div
+					className="flex cursor-pointer flex-row items-center"
+					onClick={() => setFormOpen((prev) => !prev)}
+				>
+					<FaChevronRight
 						data-active={formOpen}
-						className="size-5 transition-transform duration-300 ease-in-out data-[active=true]:rotate-180"
+						className="mr-2 size-3 transition-transform duration-300 ease-in-out data-[active=true]:rotate-90"
 					/>
+					<h3 className="flex grow text-lg">Add people</h3>
 				</div>
 				{formOpen && <PersonForm />}
 			</div>
