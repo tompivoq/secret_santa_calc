@@ -7,9 +7,11 @@ Not scheduled — just notes to come back to.
 The draw itself is done — drafted, re-rollable, locked in, stored, shown
 to each person, and avoiding last year's pairings. What's left is small:
 
-- **Delete `last_year_recipient` from the frontend `Person` model.** It was
-  always vestigial and is now definitively dead: "who did they give to last
-  year" is answered by the previous locked draw, not by a field on a person.
+- **Manual last-year values go stale silently.** They're only consulted for
+  people the previous locked draw has no answer for, so after the first
+  draw in this app they stop mattering for anyone who took part — correct,
+  but nothing in the UI says so. Worth a note next to the dropdown if it
+  ever causes confusion.
 - **Nobody can see a past draw.** Locked draws accumulate as history (which
   is what repeat-avoidance reads), but there's no way to look at last
   year's. Only worth building if you ever actually want it.
