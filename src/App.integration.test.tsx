@@ -98,9 +98,14 @@ const addPerson = async (
 	phone: string,
 	partnerName?: string,
 ) => {
-	// AdminPage is gated behind AdminRoute, which shows a "Loading…" state
-	// until the (stubbed) /api/auth/me check resolves — findByLabelText
-	// waits that out on the first call.
+	// The "Add people" form is collapsed by default — expand it if it isn't
+	// already (it stays open across repeat calls within the same test, so
+	// this is a no-op after the first). AdminPage is also gated behind
+	// AdminRoute, which shows a "Loading…" state until the (stubbed)
+	// /api/auth/me check resolves — findByText waits that out on the first call.
+	if (screen.queryByLabelText("Name") === null) {
+		await user.click(await screen.findByText("Add people"));
+	}
 	await user.clear(await screen.findByLabelText("Name"));
 	await user.clear(screen.getByLabelText("Email"));
 	await user.clear(screen.getByLabelText("Phone"));

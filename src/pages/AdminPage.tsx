@@ -1,27 +1,60 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import PersonForm from "../components/PersonForm";
 import PersonList from "../components/PersonList";
+import MatchRunner from "../components/MatchRunner";
+import { useGetPeopleQuery } from "../store/peopleApi";
 import { FaChevronDown } from "react-icons/fa6";
 
 function AdminPage() {
 	const [formOpen, setFormOpen] = useState(false);
 
+	// Also queried (and cached) inside PersonList/MatchRunner — RTK Query
+	// dedupes identical in-flight queries, so this doesn't add a request.
+	// Needed here only to know the full set of ids for "select all"/"select
+	// none" and to default a fresh selection to "everyone".
+	const { data: people } = useGetPeopleQuery();
+	const allIds = useMemo(() => (people ?? []).map((person) => person.id), [people]);
+
+	// null means "no explicit choice yet" — selection defaults to everyone
+	// currently in the list, so newly added people are included until the
+	// admin actually deselects something. Once they make any explicit
+	// choice (including "select all"), it's pinned to that set instead.
+	const [explicitSelection, setExplicitSelection] = useState<Set<number> | null>(null);
+	const selectedIds = explicitSelection ?? new Set(allIds);
+
+	const toggleSelected = (personId: number) => {
+		const next = new Set(selectedIds);
+		if (next.has(personId)) {
+			next.delete(personId);
+		} else {
+			next.add(personId);
+		}
+		setExplicitSelection(next);
+	};
+
 	return (
 		<>
 			<p>Enter a list of people and randomly assign each one a secret santa.</p>
 
-			<div className="flex flex-col h-fit rounded-xl border border-gray-400 p-5 transition-[height] duration-300 ease-in-out">
+			<div className="flex h-fit flex-col rounded-xl border border-gray-400 p-5 transition-[height] duration-300 ease-in-out">
 				<div className="flex flex-row items-center" onClick={() => setFormOpen((prev) => !prev)}>
-					<h3 className="flex text-lg grow">Add people</h3>
-					<FaChevronDown data-active={formOpen} className="size-5 transition-transform duration-300 ease-in-out data-[active=true]:rotate-180"/>
+					<h3 className="flex grow text-lg">Add people</h3>
+					<FaChevronDown
+						data-active={formOpen}
+						className="size-5 transition-transform duration-300 ease-in-out data-[active=true]:rotate-180"
+					/>
 				</div>
-				{
-					formOpen &&
-						<PersonForm />
-				}
+				{formOpen && <PersonForm />}
 			</div>
 
-			<PersonList />
+			<PersonList
+				selectedIds={selectedIds}
+				onToggleSelected={toggleSelected}
+				onSelectAll={() => setExplicitSelection(new Set(allIds))}
+				onSelectNone={() => setExplicitSelection(new Set())}
+			/>
+
+			{allIds.length > 0 && <MatchRunner selectedIds={selectedIds} />}
 		</>
 	);
 }

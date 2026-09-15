@@ -249,7 +249,9 @@ describe("admin access to the people-management page", () => {
 		stubAuthApi({ person: admin, startAuthenticated: true, mustChangePassword: false });
 		renderAt("/");
 
-		await screen.findByLabelText("Name");
+		// The "Add people" form is collapsed by default — its toggle is enough
+		// to prove the admin page itself rendered.
+		await screen.findByText("Add people");
 		expect(screen.getByRole("link", { name: "Manage people" })).not.toBeNull();
 	});
 });

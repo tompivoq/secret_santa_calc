@@ -20,23 +20,41 @@ const buttonClasses = (variant: "neutral" | "danger" = "neutral") =>
 interface ListPersonProps {
 	person: Person;
 	others: Person[];
+	selected: boolean;
+	onToggleSelected: () => void;
 	onSetPartner: (personId: number, partnerId: number | null) => void;
 	onDelete: () => void;
 }
 
-const ListPerson = ({ person, others, onSetPartner, onDelete }: ListPersonProps) => {
+const ListPerson = ({
+	person,
+	others,
+	selected,
+	onToggleSelected,
+	onSetPartner,
+	onDelete,
+}: ListPersonProps) => {
 	const [pendingDelete, setPendingDelete] = useState(false);
 	const partner = findPartner(others, person);
 	return (
 		<li
 			key={person.id}
-			className="flex flex-col gap-3 rounded-xl border border-blue-spruce-400 p-4 sm:flex-row sm:items-center sm:justify-between"
+			className="border-blue-spruce-400 flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"
 		>
-			<div>
-				<p className="font-medium">{person.name}</p>
-				<p className="text-sm">
-					{person.email} | {person.phone}
-				</p>
+			<div className="flex items-center gap-3">
+				<input
+					type="checkbox"
+					aria-label={`Include ${person.name} in the next match`}
+					checked={selected}
+					onChange={onToggleSelected}
+					className="size-4 shrink-0"
+				/>
+				<div>
+					<p className="font-medium">{person.name}</p>
+					<p className="text-sm">
+						{person.email} | {person.phone}
+					</p>
+				</div>
 			</div>
 
 			<div className="flex flex-wrap items-center gap-2">
@@ -50,7 +68,7 @@ const ListPerson = ({ person, others, onSetPartner, onDelete }: ListPersonProps)
 						onChange={(event) =>
 							onSetPartner(person.id, event.target.value === "" ? null : Number(event.target.value))
 						}
-						className="mx-2 w-full rounded-md border border-border-blue-spruce-400 px-2.5 py-2 text-base"
+						className="border-border-blue-spruce-400 mx-2 w-full rounded-md border px-2.5 py-2 text-base"
 					>
 						<option value="">None</option>
 						{others.map((p) => (
@@ -86,7 +104,15 @@ const ListPerson = ({ person, others, onSetPartner, onDelete }: ListPersonProps)
 
 const NO_PEOPLE: Person[] = [];
 
-function PersonList() {
+interface PersonListProps {
+	/** Ids of people currently selected for the next match run. */
+	selectedIds: Set<number>;
+	onToggleSelected: (personId: number) => void;
+	onSelectAll: () => void;
+	onSelectNone: () => void;
+}
+
+function PersonList({ selectedIds, onToggleSelected, onSelectAll, onSelectNone }: PersonListProps) {
 	const { data } = useGetPeopleQuery();
 	const people = data ?? NO_PEOPLE;
 	const [removePerson] = useRemovePersonMutation();
@@ -102,14 +128,29 @@ function PersonList() {
 	}
 
 	return (
-		<div className="flex flex-col mt-4 p-4 border-t border-t-metallic-gold-400">
-			<h3 className="text-lg text-left">Currently added people</h3>
+		<div className="border-t-metallic-gold-400 mt-4 flex flex-col border-t p-4">
+			<div className="flex flex-wrap items-center justify-between gap-2">
+				<h3 className="text-left text-lg">Currently added people</h3>
+				<div className="flex items-center gap-3 text-sm">
+					<span>
+						{selectedIds.size} of {people.length} selected
+					</span>
+					<button type="button" onClick={onSelectAll} className="underline hover:no-underline">
+						Select all
+					</button>
+					<button type="button" onClick={onSelectNone} className="underline hover:no-underline">
+						Select none
+					</button>
+				</div>
+			</div>
 			<ul className="mt-2 flex flex-col gap-3 text-left">
 				{people.map((person) => (
 					<ListPerson
 						key={person.id}
 						person={person}
 						others={othersById.get(person.id) ?? []}
+						selected={selectedIds.has(person.id)}
+						onToggleSelected={() => onToggleSelected(person.id)}
 						onDelete={() => removePerson(person.id)}
 						onSetPartner={(personId, partnerId) => setPartner({ personId, partnerId })}
 					/>
