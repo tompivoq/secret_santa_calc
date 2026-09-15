@@ -45,6 +45,17 @@ export const peopleApi = createApi({
 			}),
 			invalidatesTags: ["People"],
 		}),
+		setLastYearRecipient: builder.mutation<
+			void,
+			{ personId: number; lastYearRecipientId: number | null }
+		>({
+			query: ({ personId, lastYearRecipientId }) => ({
+				url: `people/${personId}/last-year`,
+				method: "PUT",
+				body: { lastYearRecipientId },
+			}),
+			invalidatesTags: ["People"],
+		}),
 	}),
 });
 
@@ -53,4 +64,5 @@ export const {
 	useAddPersonMutation,
 	useRemovePersonMutation,
 	useSetPartnerMutation,
+	useSetLastYearRecipientMutation,
 } = peopleApi;

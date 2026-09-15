@@ -3,6 +3,7 @@ import type { Person } from "../models/person";
 import {
 	useGetPeopleQuery,
 	useRemovePersonMutation,
+	useSetLastYearRecipientMutation,
 	useSetPartnerMutation,
 } from "../store/peopleApi";
 import { findPartner } from "../utils/person_utils";
@@ -17,12 +18,43 @@ const buttonClasses = (variant: "neutral" | "danger" = "neutral") =>
 			: "border-gray-700 hover:bg-gray-100 dark:border-gray-300 dark:hover:bg-gray-800",
 	);
 
+interface PersonSelectProps {
+	id: string;
+	label: string;
+	value: number | null | undefined;
+	options: Person[];
+	onChange: (personId: number | null) => void;
+}
+
+/** A "pick one of the other people, or nobody" dropdown — partner, last year's match. */
+const PersonSelect = ({ id, label, value, options, onChange }: PersonSelectProps) => (
+	<div className="flex w-44 flex-row items-center justify-stretch">
+		<label htmlFor={id} className="text-sm font-semibold">
+			{label}
+		</label>
+		<select
+			id={id}
+			value={value ?? ""}
+			onChange={(event) => onChange(event.target.value === "" ? null : Number(event.target.value))}
+			className="border-border-blue-spruce-400 mx-2 w-full rounded-md border px-2.5 py-2 text-base"
+		>
+			<option value="">None</option>
+			{options.map((p) => (
+				<option key={p.id} value={p.id}>
+					{p.name}
+				</option>
+			))}
+		</select>
+	</div>
+);
+
 interface ListPersonProps {
 	person: Person;
 	others: Person[];
 	selected: boolean;
 	onToggleSelected: () => void;
 	onSetPartner: (personId: number, partnerId: number | null) => void;
+	onSetLastYear: (personId: number, lastYearRecipientId: number | null) => void;
 	onDelete: () => void;
 }
 
@@ -32,6 +64,7 @@ const ListPerson = ({
 	selected,
 	onToggleSelected,
 	onSetPartner,
+	onSetLastYear,
 	onDelete,
 }: ListPersonProps) => {
 	const [pendingDelete, setPendingDelete] = useState(false);
@@ -58,26 +91,20 @@ const ListPerson = ({
 			</div>
 
 			<div className="flex flex-wrap items-center gap-2">
-				<div className="flex w-44 flex-row items-center justify-stretch">
-					<label htmlFor={`partner-${person.id}`} className="text-sm font-semibold">
-						Partner
-					</label>
-					<select
-						id={`partner-${person.id}`}
-						value={partner?.id ?? ""}
-						onChange={(event) =>
-							onSetPartner(person.id, event.target.value === "" ? null : Number(event.target.value))
-						}
-						className="border-border-blue-spruce-400 mx-2 w-full rounded-md border px-2.5 py-2 text-base"
-					>
-						<option value="">None</option>
-						{others.map((p) => (
-							<option key={p.id} value={p.id}>
-								{p.name}
-							</option>
-						))}
-					</select>
-				</div>
+				<PersonSelect
+					id={`partner-${person.id}`}
+					label="Partner"
+					value={partner?.id}
+					options={others}
+					onChange={(partnerId) => onSetPartner(person.id, partnerId)}
+				/>
+				<PersonSelect
+					id={`last-year-${person.id}`}
+					label="Last year"
+					value={person.lastYearRecipientId}
+					options={others}
+					onChange={(recipientId) => onSetLastYear(person.id, recipientId)}
+				/>
 				{pendingDelete === true ? (
 					<div className="flex items-center gap-2">
 						<span className="text-sm">Delete {person.name}?</span>
@@ -117,6 +144,7 @@ function PersonList({ selectedIds, onToggleSelected, onSelectAll, onSelectNone }
 	const people = data ?? NO_PEOPLE;
 	const [removePerson] = useRemovePersonMutation();
 	const [setPartner] = useSetPartnerMutation();
+	const [setLastYearRecipient] = useSetLastYearRecipientMutation();
 
 	const othersById = useMemo(
 		() => new Map(people.map((person) => [person.id, reject(people, { id: person.id })])),
@@ -153,6 +181,9 @@ function PersonList({ selectedIds, onToggleSelected, onSelectAll, onSelectNone }
 						onToggleSelected={() => onToggleSelected(person.id)}
 						onDelete={() => removePerson(person.id)}
 						onSetPartner={(personId, partnerId) => setPartner({ personId, partnerId })}
+						onSetLastYear={(personId, lastYearRecipientId) =>
+							setLastYearRecipient({ personId, lastYearRecipientId })
+						}
 					/>
 				))}
 			</ul>
