@@ -37,13 +37,26 @@ const CARL: Person = {
 	isAdmin: false,
 };
 
+interface DrawState {
+	id: number;
+	createdAt: string;
+	lockedAt: string | null;
+	assignments: { id: number; drawId: number; giverId: number; recipientId: number }[];
+}
+
 /**
- * Stubs a logged-in admin session, a fixed people list, and POST
- * /api/matcher via the given handler — the matching algorithm itself is
- * covered by the server's own tests, so these tests only care that the page
- * sends the right ids and renders whatever comes back.
+ * Stubs a logged-in admin session, a fixed people list, and the draw
+ * endpoints backed by a small in-memory draw — statefully, so that locking
+ * in is actually reflected by the next GET /current, the way the real
+ * server behaves. The matching itself is the server's job and is covered by
+ * its own suite; this fake just cycles everyone in list order.
  */
-const stubApi = (people: Person[], onMatch: (personIds: number[]) => Response) => {
+const stubApi = (people: Person[], options: { onDraft?: () => Response } = {}) => {
+	let draw: DrawState | null = null;
+	let nextId = 1;
+	/** The personIds sent with each draft request, for asserting on the selection. */
+	const drafted: number[][] = [];
+
 	vi.stubGlobal(
 		"fetch",
 		vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -60,14 +73,46 @@ const stubApi = (people: Person[], onMatch: (personIds: number[]) => Response) =
 				return new Response(JSON.stringify(people), { status: 200 });
 			}
 
-			if (url.pathname === "/api/matcher" && request.method === "POST") {
+			if (url.pathname === "/api/matcher/current" && request.method === "GET") {
+				return new Response(JSON.stringify(draw), { status: 200 });
+			}
+
+			if (url.pathname === "/api/matcher/draft" && request.method === "POST") {
 				const { personIds } = (await request.json()) as { personIds: number[] };
-				return onMatch(personIds);
+				drafted.push(personIds);
+				if (options.onDraft) {
+					return options.onDraft();
+				}
+				const drawId = nextId++;
+				draw = {
+					id: drawId,
+					createdAt: new Date().toISOString(),
+					lockedAt: null,
+					assignments: personIds.map((giverId, index) => ({
+						id: nextId++,
+						drawId,
+						giverId,
+						recipientId: personIds[(index + 1) % personIds.length]!,
+					})),
+				};
+				return new Response(JSON.stringify({ draw, repeatedLastYear: false }), { status: 200 });
+			}
+
+			if (url.pathname === "/api/matcher/lock" && request.method === "POST") {
+				if (!draw) {
+					return new Response(JSON.stringify({ error: "There is no draft to lock in" }), {
+						status: 409,
+					});
+				}
+				draw = { ...draw, lockedAt: new Date().toISOString() };
+				return new Response(JSON.stringify(draw), { status: 200 });
 			}
 
 			return new Response(null, { status: 204 });
 		}),
 	);
+
+	return { drafted };
 };
 
 afterEach(() => {
@@ -83,79 +128,137 @@ const renderAdminPage = () =>
 		</Provider>,
 	);
 
+/**
+ * The rendered "Giver → Recipient" line for a giver, whichever recipient
+ * they got. Scoped to the <li> itself: the surrounding <ul>'s text starts
+ * with the first giver's line too, and would match just as well.
+ */
+const assignmentLineFor = (giver: string) =>
+	screen.findByText(
+		(_, el) => el?.tagName === "LI" && el.textContent?.startsWith(`${giver} → `) === true,
+	);
+
 describe("running a match from the admin page", () => {
-	it("defaults to everyone selected, and previews the match the server returns", async () => {
-		stubApi([ANNA, BJORN, CARL], (personIds) => {
-			expect(personIds.sort()).toEqual([ANNA.id, BJORN.id, CARL.id].sort());
-			return new Response(
-				JSON.stringify([
-					{ ...ANNA, hasMatch: true, currentTarget: BJORN.id },
-					{ ...BJORN, hasMatch: true, currentTarget: CARL.id },
-					{ ...CARL, hasMatch: true, currentTarget: ANNA.id },
-				]),
-				{ status: 200 },
-			);
-		});
+	it("defaults to everyone selected, and shows the drafted match", async () => {
+		stubApi([ANNA, BJORN, CARL]);
 		const user = userEvent.setup();
 		renderAdminPage();
 
 		await screen.findByText("3 of 3 selected");
-		await user.click(screen.getByRole("button", { name: /Preview match/ }));
+		await user.click(screen.getByRole("button", { name: /Run match/ }));
 
-		const results = await screen.findByText((_, el) => el?.textContent === "Anna → Bjørn");
-		expect(results).not.toBeNull();
-		expect(screen.getByText((_, el) => el?.textContent === "Bjørn → Carl")).not.toBeNull();
-		expect(screen.getByText((_, el) => el?.textContent === "Carl → Anna")).not.toBeNull();
+		expect(await assignmentLineFor("Anna")).not.toBeNull();
+		expect(await assignmentLineFor("Bjørn")).not.toBeNull();
+		expect(await assignmentLineFor("Carl")).not.toBeNull();
 	});
 
 	it("excludes a deselected person from the request", async () => {
-		stubApi([ANNA, BJORN, CARL], (personIds) => {
-			expect(personIds.sort()).toEqual([ANNA.id, BJORN.id].sort());
-			return new Response(
-				JSON.stringify([
-					{ ...ANNA, hasMatch: true, currentTarget: BJORN.id },
-					{ ...BJORN, hasMatch: true, currentTarget: ANNA.id },
-				]),
-				{ status: 200 },
-			);
-		});
+		const { drafted } = stubApi([ANNA, BJORN, CARL]);
 		const user = userEvent.setup();
 		renderAdminPage();
 
 		await user.click(await screen.findByLabelText(`Include ${CARL.name} in the next match`));
 		await screen.findByText("2 of 3 selected");
+		await user.click(screen.getByRole("button", { name: /Run match/ }));
 
-		await user.click(screen.getByRole("button", { name: /Preview match/ }));
-
-		await screen.findByText((_, el) => el?.textContent === "Anna → Bjørn");
+		await assignmentLineFor("Anna");
+		expect(drafted).toHaveLength(1);
+		expect([...drafted[0]!].sort()).toEqual([ANNA.id, BJORN.id].sort());
 	});
 
-	it("disables the preview button with fewer than 2 people selected", async () => {
-		stubApi([ANNA, BJORN, CARL], () => new Response(null, { status: 204 }));
+	it("disables the run button with fewer than 2 people selected", async () => {
+		stubApi([ANNA, BJORN, CARL]);
 		const user = userEvent.setup();
 		renderAdminPage();
 
 		await user.click(await screen.findByRole("button", { name: "Select none" }));
 		await user.click(screen.getByLabelText(`Include ${ANNA.name} in the next match`));
 
-		const button = screen.getByRole("button", { name: /Preview match/ }) as HTMLButtonElement;
+		const button = screen.getByRole("button", { name: /Run match/ }) as HTMLButtonElement;
 		expect(button.disabled).toBe(true);
 	});
 
 	it("shows a friendly message when no valid match exists for the selection", async () => {
-		stubApi(
-			[ANNA, BJORN],
-			() =>
+		stubApi([ANNA, BJORN], {
+			onDraft: () =>
 				new Response(JSON.stringify({ error: "No valid matching exists for this group" }), {
 					status: 422,
 				}),
-		);
+		});
 		const user = userEvent.setup();
 		renderAdminPage();
 
 		await screen.findByText("2 of 2 selected");
-		await user.click(screen.getByRole("button", { name: /Preview match/ }));
+		await user.click(screen.getByRole("button", { name: /Run match/ }));
 
 		await screen.findByText(/No valid match exists for the selected people/);
+	});
+});
+
+describe("locking a draft in", () => {
+	it("offers re-rolling until locked, then swaps to the locked view", async () => {
+		stubApi([ANNA, BJORN, CARL]);
+		const user = userEvent.setup();
+		renderAdminPage();
+
+		await screen.findByText("3 of 3 selected");
+		await user.click(screen.getByRole("button", { name: /Run match/ }));
+		await assignmentLineFor("Anna");
+
+		// While it's a draft: re-rollable, and explicitly not final.
+		expect(screen.getByText(/Nothing is final until you lock it in/)).not.toBeNull();
+		expect(screen.getByRole("button", { name: /Re-roll/ })).not.toBeNull();
+
+		await user.click(screen.getByRole("button", { name: "Lock in this match" }));
+
+		// Once locked: no re-roll, and starting over is offered instead.
+		await screen.findByText(/Locked in on/);
+		expect(screen.queryByRole("button", { name: /Re-roll/ })).toBeNull();
+		expect(screen.queryByRole("button", { name: "Lock in this match" })).toBeNull();
+		expect(screen.getByRole("button", { name: "Start a new draw" })).not.toBeNull();
+	});
+
+	it("asks for confirmation before drawing over a locked result", async () => {
+		stubApi([ANNA, BJORN, CARL]);
+		const user = userEvent.setup();
+		renderAdminPage();
+
+		await screen.findByText("3 of 3 selected");
+		await user.click(screen.getByRole("button", { name: /Run match/ }));
+		await assignmentLineFor("Anna");
+		await user.click(screen.getByRole("button", { name: "Lock in this match" }));
+		await screen.findByText(/Locked in on/);
+
+		await user.click(screen.getByRole("button", { name: "Start a new draw" }));
+
+		// Nothing is re-drawn on the first click — it warns first.
+		await screen.findByText(/Everyone's match will change/);
+		expect(screen.getByText(/Locked in on/)).not.toBeNull();
+
+		await user.click(screen.getByRole("button", { name: "Cancel" }));
+		expect(screen.queryByText(/Everyone's match will change/)).toBeNull();
+	});
+});
+
+describe("a draw that's already been run", () => {
+	it("picks the locked draw back up on load, without re-running anything", async () => {
+		stubApi([ANNA, BJORN, CARL]);
+		const user = userEvent.setup();
+		const { unmount } = renderAdminPage();
+
+		await screen.findByText("3 of 3 selected");
+		await user.click(screen.getByRole("button", { name: /Run match/ }));
+		await assignmentLineFor("Anna");
+		await user.click(screen.getByRole("button", { name: "Lock in this match" }));
+		await screen.findByText(/Locked in on/);
+
+		// A fresh store, as if the page had been reloaded: the draw is the
+		// server's, not something held in component state.
+		unmount();
+		cleanup();
+		renderAdminPage();
+
+		await screen.findByText(/Locked in on/);
+		expect(await assignmentLineFor("Anna")).not.toBeNull();
 	});
 });
