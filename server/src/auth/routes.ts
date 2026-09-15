@@ -7,6 +7,7 @@ import { requireAuth } from "./middleware.js";
 import type { AuthVariables } from "./types.js";
 import { login, getMustChangePassword, changePassword } from "./service.js";
 import { createSession, clearSession } from "./session.js";
+import { consumeMagicToken } from "./magic.js";
 
 const loginSchema = z.object({
 	email: z.email(),
@@ -32,6 +33,17 @@ export const getRoutes = (db: Db, authSecret: string) =>
 		.post("/logout", (c) => {
 			clearSession(c);
 			return c.body(null, 204);
+		})
+		// Followed straight from an email, so it answers with a redirect into
+		// the app rather than JSON — whoever clicks it is looking at a browser,
+		// not a fetch() call.
+		.get("/magic/:token", async (c) => {
+			const personId = await consumeMagicToken(db, c.req.param("token"), authSecret);
+			if (personId === null) {
+				return c.redirect("/login?error=link-expired", 303);
+			}
+			await createSession(c, personId, authSecret);
+			return c.redirect("/account", 303);
 		})
 		.get("/me", requireAuth(authSecret), (c) => {
 			const personId = c.get("personId");

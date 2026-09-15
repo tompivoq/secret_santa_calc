@@ -9,7 +9,17 @@ interface SessionPayload {
 	[key: string]: unknown;
 	personId: number;
 	exp: number;
+	purpose?: string;
 }
+
+/**
+ * Magic-link tokens are signed with this same secret and also carry a
+ * personId, so without saying what a token is *for*, one could simply be
+ * pasted in as a session cookie — logging in while leaving the link
+ * unconsumed and therefore still reusable. Tokens issued before this
+ * claim existed have no purpose at all, and stay valid as sessions.
+ */
+const SESSION_PURPOSE = "session";
 
 /** Issues a session for `personId` and sets it as an httpOnly cookie on the response. */
 export const createSession = async (
@@ -19,6 +29,7 @@ export const createSession = async (
 ): Promise<void> => {
 	const payload: SessionPayload = {
 		personId,
+		purpose: SESSION_PURPOSE,
 		exp: Math.floor(Date.now() / 1000) + SESSION_LIFETIME_SECONDS,
 	};
 	const token = await sign(payload, secret, "HS256");
@@ -42,6 +53,9 @@ export const readSession = async (c: Context, secret: string): Promise<number | 
 
 	try {
 		const payload = (await verify(token, secret, "HS256")) as unknown as SessionPayload;
+		if (payload.purpose !== undefined && payload.purpose !== SESSION_PURPOSE) {
+			return null;
+		}
 		return payload.personId;
 	} catch {
 		return null;

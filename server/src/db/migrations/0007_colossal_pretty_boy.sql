@@ -1,0 +1,1 @@
+ALTER TABLE `credentials` ADD `magic_token_id` text;

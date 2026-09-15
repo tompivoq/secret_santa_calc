@@ -53,6 +53,14 @@ export const credentials = sqliteTable("credentials", {
 	// True until the person completes their first login and picks their own
 	// password; the API refuses everything except change-password until then.
 	mustChangePassword: integer("must_change_password", { mode: "boolean" }).notNull().default(true),
+	/**
+	 * The id of this person's outstanding magic-link token, if any. A JWT is
+	 * stateless and so can't be single-use on its own; keeping the id here
+	 * and clearing it on use is what makes a link stop working once it has
+	 * been followed. One slot per person, so issuing a new link also
+	 * invalidates any older one.
+	 */
+	magicTokenId: text("magic_token_id"),
 });
 
 export type CredentialsRow = typeof credentials.$inferSelect;
