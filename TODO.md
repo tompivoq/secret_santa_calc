@@ -2,16 +2,47 @@
 
 Not scheduled — just notes to come back to.
 
+## Matching/draw feature
+
+Partly built. What exists today:
+
+- `doMatching` (`server/src/matcher/matching_logic.ts`) — backtracking
+  search that gives everyone a recipient, excluding themselves and their
+  partner, or returns null if no valid assignment exists for the group at
+  all.
+- `POST /api/matcher` (admin-only) — takes a list of `personId`s, fetches
+  those people, runs the matching and returns the assignment. 422 when the
+  group has no valid matching (e.g. a couple on their own).
+- Admin page — select everyone or a subset, then "Preview match" to see
+  what comes back.
+
+**Still missing:**
+
+- **Persistence.** The endpoint computes an assignment, returns it, and
+  forgets it — which is why every run is inherently a dry run and the admin
+  UI can only ever preview. Needs an `assignments` table (`giverId` /
+  `recipientId` / maybe `year`) before "who am I matched with" or the email
+  below mean anything.
+- **Locking in.** Once assignments are stored: re-runnable until the admin
+  locks the draw in, frozen afterwards. This is what turns the current
+  preview-only button into "preview" _vs_ "commit".
+- **Last year's recipient.** Still not excluded. `last_year_recipient`
+  exists as a vestigial field on the frontend `Person` model but isn't a
+  real DB column and isn't wired to anything. Once it is, it's one more
+  clause in `canGiveTo` — there's a comment marking the exact spot.
+- **Showing people their match.** AccountPage unconditionally says "You
+  haven't been matched yet" — it has nothing to read yet, per the
+  persistence point above.
+
 ## Match-notification email
 
-Once the matching/draw feature exists (assigns each person a recipient —
-doesn't exist yet either, see below), send an email letting each person know
-their match is ready to view.
+Nothing built yet. Once assignments are actually stored (see above), send
+each person an email letting them know their match is ready to view.
 
 **1. What triggers the send**
 
-- Natural hook: right after the admin runs the draw, either as part of that
-  same action or a separate "notify everyone" button.
+- Natural hook: right after the admin locks in the draw, either as part of
+  that same action or a separate "notify everyone" button.
 - Track a `notifiedAt` timestamp per person regardless of when this gets
   built, so it's possible to:
   - avoid double-sending if the button is clicked twice
@@ -62,24 +93,9 @@ their match is ready to view.
 
 **5. Nice-to-haves worth designing in from the start**
 
-- Dry-run/preview mode in the admin UI — render the emails without sending,
-  to sanity-check wording and the recipient list before it goes out to the
-  whole family.
+- Preview the emails without sending, to sanity-check wording and the
+  recipient list before it goes out to the whole family. The match itself
+  already previews this way; the email side doesn't exist yet.
 - Skip (or nudge first) anyone still sitting on their initial,
   never-confirmed password when the draw runs — get them logged in and
   their password set _before_ the draw, not after.
-
-## Matching/draw feature
-
-Doesn't exist yet — the app currently only manages people and their partner
-(couple) links. Needed before "who am I matched with" or the email above
-mean anything:
-
-- Randomly assign each person a recipient, excluding their own partner
-  (and presumably not assigning someone to themselves).
-- Decide whether to also exclude last year's assignment
-  (`last_year_recipient` exists as a vestigial field on the `Person` model
-  today but isn't wired up to anything).
-- Store the result somewhere (`assignments` table: `giverId` / `recipientId`
-  / maybe `year`), admin-triggered ("run the draw"), probably re-runnable
-  until "locked in."
