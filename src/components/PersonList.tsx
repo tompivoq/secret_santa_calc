@@ -102,17 +102,20 @@ function PersonList() {
 	}
 
 	return (
-		<ul className="mt-8 flex flex-col gap-3 text-left">
-			{people.map((person) => (
-				<ListPerson
-					key={person.id}
-					person={person}
-					others={othersById.get(person.id) ?? []}
-					onDelete={() => removePerson(person.id)}
-					onSetPartner={(personId, partnerId) => setPartner({ personId, partnerId })}
-				/>
-			))}
-		</ul>
+		<div className="flex flex-col mt-4 p-4 border-t border-t-metallic-gold-400">
+			<h3 className="text-lg text-left">Currently added people</h3>
+			<ul className="mt-2 flex flex-col gap-3 text-left">
+				{people.map((person) => (
+					<ListPerson
+						key={person.id}
+						person={person}
+						others={othersById.get(person.id) ?? []}
+						onDelete={() => removePerson(person.id)}
+						onSetPartner={(personId, partnerId) => setPartner({ personId, partnerId })}
+					/>
+				))}
+			</ul>
+		</div>
 	);
 }
 
