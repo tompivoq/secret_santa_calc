@@ -27,11 +27,48 @@ const draftRequestSchema = z.object({
 	 * doesn't need it — nothing has been committed to yet.
 	 */
 	startOver: z.boolean().optional(),
+	/**
+	 * Defaults to hiding the pairings, because the cost of the two mistakes
+	 * isn't symmetric: a needlessly hidden test draw is a tick-box away from
+	 * being re-run, while a needlessly revealed real one has already spoiled
+	 * the surprise by the time anyone notices.
+	 */
+	blind: z.boolean().default(true),
+});
+
+/**
+ * A draw as the admin is allowed to see it. Who took part is always shown
+ * — it's their own selection back again, and they need it to tell a draw
+ * of the right people from a draw of the wrong ones. The pairings are
+ * shown only for a draw that was run with blind: false.
+ */
+interface AdminDraw {
+	id: number;
+	createdAt: Date;
+	lockedAt: Date | null;
+	blind: boolean;
+	participantIds: number[];
+	assignments?: Draw["assignments"];
+}
+
+const forAdmin = (draw: Draw): AdminDraw => ({
+	id: draw.id,
+	createdAt: draw.createdAt,
+	lockedAt: draw.lockedAt,
+	blind: draw.blind,
+	participantIds: draw.assignments.map((assignment) => assignment.giverId),
+	// Not merely unrendered by the client — a blind draw's pairings never
+	// leave the server, so there's nothing to find in the network tab either.
+	...(draw.blind ? {} : { assignments: draw.assignments }),
 });
 
 interface DraftResult {
-	draw: Draw;
-	/** True when last year's pairings had to be allowed to find any valid match at all. */
+	draw: AdminDraw;
+	/**
+	 * True when last year's pairings had to be allowed to find any valid
+	 * match at all. Safe to report even for a blind draw: it says something
+	 * about the group, not about who drew whom.
+	 */
 	repeatedLastYear: boolean;
 }
 
@@ -41,7 +78,7 @@ interface DraftResult {
  * them rather than telling the admin a perfectly matchable group is
  * impossible — reporting *that* it fell back is the honest middle ground.
  */
-const runDraft = (db: Db, people: MatchingPerson[]): DraftResult | null => {
+const runDraft = (db: Db, people: MatchingPerson[], blind: boolean): DraftResult | null => {
 	const previous = getLatestLockedDraw(db);
 	const withoutRepeats = previous ? doMatching(people, asPairs(previous)) : null;
 	const matched = withoutRepeats ?? doMatching(people);
@@ -51,7 +88,7 @@ const runDraft = (db: Db, people: MatchingPerson[]): DraftResult | null => {
 
 	const pairs = new Map(matched.map((person) => [person.id, person.currentTarget!]));
 	return {
-		draw: saveDraft(db, pairs),
+		draw: forAdmin(saveDraft(db, pairs, blind)),
 		repeatedLastYear: previous !== null && withoutRepeats === null,
 	};
 };
@@ -63,9 +100,12 @@ const runDraft = (db: Db, people: MatchingPerson[]): DraftResult | null => {
 export const getRoutes = (db: Db, authSecret: string) =>
 	new Hono<{ Variables: AuthVariables }>()
 		.use("*", requireAuth(authSecret))
-		.get("/current", requireAdmin(db), (c) => c.json(getCurrentDraw(db)))
+		.get("/current", requireAdmin(db), (c) => {
+			const draw = getCurrentDraw(db);
+			return c.json(draw ? forAdmin(draw) : null);
+		})
 		.post("/draft", requireAdmin(db), zValidator("json", draftRequestSchema), (c) => {
-			const { personIds, startOver } = c.req.valid("json");
+			const { personIds, startOver, blind } = c.req.valid("json");
 
 			const rows = getPeopleByIds(db, personIds);
 			if (rows.length !== personIds.length) {
@@ -85,7 +125,7 @@ export const getRoutes = (db: Db, authSecret: string) =>
 				currentTarget: null,
 			}));
 
-			const result = runDraft(db, people);
+			const result = runDraft(db, people, blind);
 			if (!result) {
 				return c.json({ error: "No valid matching exists for this group" }, 422);
 			}
@@ -96,7 +136,7 @@ export const getRoutes = (db: Db, authSecret: string) =>
 			if (!locked) {
 				return c.json({ error: "There is no draft to lock in" }, 409);
 			}
-			return c.json(locked);
+			return c.json(forAdmin(locked));
 		})
 		// The one route here that isn't admin-only: anyone signed in can see
 		// their own match, and only ever their own — never the whole draw, and

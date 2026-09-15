@@ -32,16 +32,37 @@ const draftErrorMessage = (error: unknown): string => {
 	}
 };
 
-const AssignmentList = ({ draw, nameById }: { draw: Draw; nameById: Map<number, string> }) => (
-	<ul className="flex flex-col gap-1 text-sm">
-		{draw.assignments.map((assignment) => (
-			<li key={assignment.id}>
-				<span className="font-medium">{nameById.get(assignment.giverId) ?? "Unknown"}</span> →{" "}
-				{nameById.get(assignment.recipientId) ?? "Unknown"}
-			</li>
-		))}
-	</ul>
-);
+/**
+ * What was drawn. For a blind draw that's deliberately only who took part
+ * — the server doesn't send the pairings, so there's nothing to show even
+ * if this wanted to.
+ */
+const DrawSummary = ({ draw, nameById }: { draw: Draw; nameById: Map<number, string> }) => {
+	if (!draw.assignments) {
+		return (
+			<div className="flex flex-col gap-1 text-sm">
+				<p>
+					<span className="font-medium">{draw.participantIds.length} people</span> were matched:{" "}
+					{draw.participantIds.map((id) => nameById.get(id) ?? "Unknown").join(", ")}.
+				</p>
+				<p className="text-gray-600 dark:text-gray-400">
+					Who drew whom is hidden — including from you, so your own match stays a surprise.
+				</p>
+			</div>
+		);
+	}
+
+	return (
+		<ul className="flex flex-col gap-1 text-sm">
+			{draw.assignments.map((assignment) => (
+				<li key={assignment.id}>
+					<span className="font-medium">{nameById.get(assignment.giverId) ?? "Unknown"}</span> →{" "}
+					{nameById.get(assignment.recipientId) ?? "Unknown"}
+				</li>
+			))}
+		</ul>
+	);
+};
 
 function MatchRunner({ selectedIds }: MatchRunnerProps) {
 	const { data: people } = useGetPeopleQuery();
@@ -50,6 +71,9 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 		useDraftMutation();
 	const [lockDraw, { error: lockError, isLoading: isLocking }] = useLockDrawMutation();
 	const [confirmingStartOver, setConfirmingStartOver] = useState(false);
+	// Defaults to hiding, since the admin is normally taking part themselves
+	// — showing it is the deliberate choice, for testing a group out.
+	const [blind, setBlind] = useState(true);
 
 	const nameById = new Map((people ?? []).map((person) => [person.id, person.name]));
 	const selectedCount = selectedIds.size;
@@ -57,7 +81,7 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 
 	const runDraft = (startOver?: boolean) => {
 		setConfirmingStartOver(false);
-		void draft({ personIds: [...selectedIds], ...(startOver && { startOver }) });
+		void draft({ personIds: [...selectedIds], blind, ...(startOver && { startOver }) });
 	};
 
 	// Only meaningful for a draft: a locked draw is history, so the fact that
@@ -66,8 +90,8 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 		currentDraw !== null &&
 		currentDraw !== undefined &&
 		!isLocked &&
-		(currentDraw.assignments.length !== selectedCount ||
-			currentDraw.assignments.some((a) => !selectedIds.has(a.giverId)));
+		(currentDraw.participantIds.length !== selectedCount ||
+			currentDraw.participantIds.some((id) => !selectedIds.has(id)));
 
 	return (
 		<div className="border-t-metallic-gold-400 mt-4 flex flex-col gap-3 border-t p-4 text-left">
@@ -85,24 +109,41 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 			)}
 
 			{!isLocked && (
-				<div>
-					<Button
-						type="button"
-						behaviour="action"
-						disabled={selectedCount < 2 || isDrafting}
-						onClick={() => runDraft()}
-					>
-						{isDrafting
-							? "Matching…"
-							: currentDraw
-								? `Re-roll (${selectedCount} selected)`
-								: `Run match (${selectedCount} selected)`}
-					</Button>
-					{selectedCount < 2 && (
-						<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-							Select at least 2 people to run a match.
-						</p>
-					)}
+				<div className="flex flex-col gap-2">
+					<label className="flex items-center gap-2 text-sm">
+						<input
+							type="checkbox"
+							checked={blind}
+							onChange={(event) => setBlind(event.target.checked)}
+							className="size-4 shrink-0"
+						/>
+						Don't show me who drew whom
+					</label>
+					<p className="text-sm text-gray-600 dark:text-gray-400">
+						{blind
+							? "Keep this ticked for the real draw — it's the only way your own match stays a surprise."
+							: "You'll see everyone's match, including your own. Useful for testing a group out."}
+					</p>
+
+					<div>
+						<Button
+							type="button"
+							behaviour="action"
+							disabled={selectedCount < 2 || isDrafting}
+							onClick={() => runDraft()}
+						>
+							{isDrafting
+								? "Matching…"
+								: currentDraw
+									? `Re-roll (${selectedCount} selected)`
+									: `Run match (${selectedCount} selected)`}
+						</Button>
+						{selectedCount < 2 && (
+							<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+								Select at least 2 people to run a match.
+							</p>
+						)}
+					</div>
 				</div>
 			)}
 
@@ -129,7 +170,7 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 						</p>
 					)}
 
-					<AssignmentList draw={currentDraw} nameById={nameById} />
+					<DrawSummary draw={currentDraw} nameById={nameById} />
 
 					{isLocked ? (
 						confirmingStartOver ? (

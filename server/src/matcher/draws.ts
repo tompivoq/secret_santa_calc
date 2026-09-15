@@ -66,14 +66,14 @@ export const hasDraft = (db: Db): boolean => selectDraft(db) !== undefined;
  * Locked draws are never touched — they're history, and starting a fresh
  * draft alongside one is how a re-draw happens.
  */
-export const saveDraft = (db: Db, pairs: Map<number, number>): Draw =>
+export const saveDraft = (db: Db, pairs: Map<number, number>, blind = true): Draw =>
 	db.transaction((tx) => {
 		const existing = selectDraft(tx);
 		if (existing) {
 			tx.delete(draws).where(eq(draws.id, existing.id)).run();
 		}
 
-		const draw = tx.insert(draws).values({ createdAt: new Date() }).returning().get();
+		const draw = tx.insert(draws).values({ createdAt: new Date(), blind }).returning().get();
 		const rows = [...pairs].map(([giverId, recipientId]) => ({
 			drawId: draw.id,
 			giverId,

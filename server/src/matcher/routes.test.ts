@@ -6,7 +6,7 @@ import { createDb, type Db } from "../db/client.js";
 import { migrationsFolder } from "../db/migrate.js";
 import { people } from "../db/schema.js";
 import { addPerson, setPartner, type CreatedPerson } from "../people/people.js";
-import { getLatestLockedDraw, hasDraft, lockDraft, saveDraft } from "./draws.js";
+import { asPairs, getLatestLockedDraw, hasDraft, lockDraft, saveDraft } from "./draws.js";
 
 let db: Db;
 let app: ReturnType<typeof createApp>;
@@ -46,11 +46,17 @@ const asAdmin = async () => {
 	return loginAs("admin@example.com", admin.initialPassword);
 };
 
-const postDraft = (personIds: number[], cookie?: string, startOver?: boolean) =>
+interface DraftOptions {
+	startOver?: boolean;
+	/** Left visible by default here — most of these tests assert on the pairings. */
+	blind?: boolean;
+}
+
+const postDraft = (personIds: number[], cookie?: string, options: DraftOptions = {}) =>
 	app.request("/api/matcher/draft", {
 		method: "POST",
 		headers: { "Content-Type": "application/json", ...(cookie && { cookie }) },
-		body: JSON.stringify({ personIds, ...(startOver !== undefined && { startOver }) }),
+		body: JSON.stringify({ personIds, blind: false, ...options }),
 	});
 
 const postLock = (cookie?: string) =>
@@ -194,7 +200,7 @@ describe("drafting again once the draw is locked in", () => {
 		await postDraft([anna.id, bjorn.id], cookie);
 		const locked = (await (await postLock(cookie)).json()) as DraftBody["draw"];
 
-		const res = await postDraft([anna.id, bjorn.id], cookie, true);
+		const res = await postDraft([anna.id, bjorn.id], cookie, { startOver: true });
 
 		expect(res.status).toBe(200);
 		const body = (await res.json()) as DraftBody;
@@ -209,7 +215,7 @@ describe("drafting again once the draw is locked in", () => {
 		const bjorn = seed("Bjørn");
 		await postDraft([anna.id, bjorn.id], cookie);
 		await postLock(cookie);
-		await postDraft([anna.id, bjorn.id], cookie, true);
+		await postDraft([anna.id, bjorn.id], cookie, { startOver: true });
 
 		// Nothing has been committed to since, so this is just another re-roll.
 		expect((await postDraft([anna.id, bjorn.id], cookie)).status).toBe(200);
@@ -239,7 +245,7 @@ describe("avoiding last year's pairings", () => {
 		lockDraft(db);
 
 		const body = (await (
-			await postDraft([anna.id, bjorn.id, carl.id], cookie, true)
+			await postDraft([anna.id, bjorn.id, carl.id], cookie, { startOver: true })
 		).json()) as DraftBody;
 
 		expect(body.repeatedLastYear).toBe(false);
@@ -259,6 +265,110 @@ describe("avoiding last year's pairings", () => {
 		const body = (await (await postDraft(ids, cookie)).json()) as DraftBody;
 
 		expect(body.repeatedLastYear).toBe(false);
+	});
+});
+
+describe("a blind draw", () => {
+	interface BlindBody {
+		draw: {
+			id: number;
+			blind: boolean;
+			participantIds: number[];
+			assignments?: unknown;
+		};
+	}
+
+	const seedTrioAsAdmin = async () => {
+		const cookie = await asAdmin();
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+		const carl = seed("Carl");
+		return { cookie, ids: [anna.id, bjorn.id, carl.id] };
+	};
+
+	it("withholds the pairings from the admin, while still saying who took part", async () => {
+		const { cookie, ids } = await seedTrioAsAdmin();
+
+		const body = (await (await postDraft(ids, cookie, { blind: true })).json()) as BlindBody;
+
+		expect(body.draw.blind).toBe(true);
+		expect(body.draw.participantIds.sort()).toEqual([...ids].sort());
+		// Not merely unrendered by the client — absent from the response.
+		expect(body.draw.assignments).toBeUndefined();
+	});
+
+	it("keeps them hidden on re-read, so a reload doesn't reveal them", async () => {
+		const { cookie, ids } = await seedTrioAsAdmin();
+		await postDraft(ids, cookie, { blind: true });
+
+		const current = (await (await getCurrent(cookie)).json()) as BlindBody["draw"];
+
+		expect(current.blind).toBe(true);
+		expect(current.assignments).toBeUndefined();
+	});
+
+	it("keeps them hidden once locked in, when it matters most", async () => {
+		const { cookie, ids } = await seedTrioAsAdmin();
+		await postDraft(ids, cookie, { blind: true });
+
+		const locked = (await (await postLock(cookie)).json()) as BlindBody["draw"];
+		const current = (await (await getCurrent(cookie)).json()) as BlindBody["draw"];
+
+		expect(locked.assignments).toBeUndefined();
+		expect(current.assignments).toBeUndefined();
+		// Whole-body check: no recipient id reaches the admin by any route.
+		expect(JSON.stringify(locked)).not.toContain("recipientId");
+	});
+
+	it("hides by default, so forgetting the flag can't spoil a real draw", async () => {
+		const cookie = await asAdmin();
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+		const res = await app.request("/api/matcher/draft", {
+			method: "POST",
+			headers: { "Content-Type": "application/json", cookie },
+			// No `blind` at all.
+			body: JSON.stringify({ personIds: [anna.id, bjorn.id] }),
+		});
+
+		const body = (await res.json()) as BlindBody;
+		expect(body.draw.blind).toBe(true);
+		expect(body.draw.assignments).toBeUndefined();
+	});
+
+	it("still tells each person their own match once locked", async () => {
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+		const carl = seed("Carl");
+		const adminCookie = await asAdmin();
+		const annaCookie = await loginAs("anna@example.com", anna.initialPassword);
+		await postDraft([anna.id, bjorn.id, carl.id], adminCookie, { blind: true });
+		await postLock(adminCookie);
+
+		const mine = (await (
+			await app.request("/api/matcher/mine", { headers: { cookie: annaCookie } })
+		).json()) as { recipient: { name: string } | null };
+
+		// Blind to the admin, not broken for everyone — Anna still gets hers.
+		expect(mine.recipient).not.toBeNull();
+		expect(["Bjørn", "Carl"]).toContain(mine.recipient!.name);
+	});
+
+	it("is still used as last year's pairings, which the server can read", async () => {
+		const { cookie, ids } = await seedTrioAsAdmin();
+		await postDraft(ids, cookie, { blind: true });
+		await postLock(cookie);
+		const lastYear = asPairs(getLatestLockedDraw(db)!);
+
+		// Visible this time, so the test can check what it avoided.
+		const body = (await (
+			await postDraft(ids, cookie, { startOver: true, blind: false })
+		).json()) as DraftBody;
+
+		expect(body.repeatedLastYear).toBe(false);
+		for (const assignment of body.draw.assignments) {
+			expect(assignment.recipientId).not.toBe(lastYear.get(assignment.giverId));
+		}
 	});
 });
 

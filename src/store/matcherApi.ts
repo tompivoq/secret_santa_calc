@@ -12,7 +12,15 @@ export interface Draw {
 	createdAt: string;
 	/** Null while this is still a draft the admin can re-roll. */
 	lockedAt: string | null;
-	assignments: Assignment[];
+	/** Whether the pairings are withheld from the admin — see `assignments`. */
+	blind: boolean;
+	/** Who took part. Always present, even when the pairings aren't. */
+	participantIds: number[];
+	/**
+	 * Absent for a blind draw, and absent from the response itself rather
+	 * than merely unrendered — there's nothing here to reveal.
+	 */
+	assignments?: Assignment[];
 }
 
 export interface DraftResult {
@@ -25,6 +33,8 @@ export interface DraftRequest {
 	personIds: number[];
 	/** Required to draw again once a draw is locked in — see the matcher routes. */
 	startOver?: boolean;
+	/** Withhold the pairings from the admin too. Defaults to true server-side. */
+	blind?: boolean;
 }
 
 export interface MyMatch {

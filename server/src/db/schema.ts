@@ -67,6 +67,17 @@ export const draws = sqliteTable("draws", {
 	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 	/** Null while this is still a draft. Set once, when the admin locks it in. */
 	lockedAt: integer("locked_at", { mode: "timestamp" }),
+	/**
+	 * Whether the pairings are withheld from the admin too — the usual case
+	 * for a real draw, since the admin is normally taking part in it and
+	 * seeing everyone's match would spoil their own. Stored rather than
+	 * decided per request so it still holds after a reload, and enforced
+	 * where it matters: the route strips the assignments out entirely.
+	 *
+	 * The server itself still reads them, to avoid repeating last year's
+	 * pairings — being blind to the admin isn't being blind to everyone.
+	 */
+	blind: integer("blind", { mode: "boolean" }).notNull().default(true),
 });
 
 export type DrawRow = typeof draws.$inferSelect;

@@ -41,7 +41,9 @@ interface DrawState {
 	id: number;
 	createdAt: string;
 	lockedAt: string | null;
-	assignments: { id: number; drawId: number; giverId: number; recipientId: number }[];
+	blind: boolean;
+	participantIds: number[];
+	assignments?: { id: number; drawId: number; giverId: number; recipientId: number }[];
 }
 
 /**
@@ -54,8 +56,8 @@ interface DrawState {
 const stubApi = (people: Person[], options: { onDraft?: () => Response } = {}) => {
 	let draw: DrawState | null = null;
 	let nextId = 1;
-	/** The personIds sent with each draft request, for asserting on the selection. */
-	const drafted: number[][] = [];
+	/** Each draft request's body, for asserting on what the page actually asked for. */
+	const drafted: { personIds: number[]; blind?: boolean }[] = [];
 
 	vi.stubGlobal(
 		"fetch",
@@ -78,8 +80,9 @@ const stubApi = (people: Person[], options: { onDraft?: () => Response } = {}) =
 			}
 
 			if (url.pathname === "/api/matcher/draft" && request.method === "POST") {
-				const { personIds } = (await request.json()) as { personIds: number[] };
-				drafted.push(personIds);
+				const body = (await request.json()) as { personIds: number[]; blind?: boolean };
+				const { personIds, blind } = body;
+				drafted.push(body);
 				if (options.onDraft) {
 					return options.onDraft();
 				}
@@ -88,12 +91,18 @@ const stubApi = (people: Person[], options: { onDraft?: () => Response } = {}) =
 					id: drawId,
 					createdAt: new Date().toISOString(),
 					lockedAt: null,
-					assignments: personIds.map((giverId, index) => ({
-						id: nextId++,
-						drawId,
-						giverId,
-						recipientId: personIds[(index + 1) % personIds.length]!,
-					})),
+					blind: blind !== false,
+					participantIds: personIds,
+					// Withheld for a blind draw, exactly as the real server does —
+					// so a test that finds pairings on screen proves they were sent.
+					...(blind === false && {
+						assignments: personIds.map((giverId, index) => ({
+							id: nextId++,
+							drawId,
+							giverId,
+							recipientId: personIds[(index + 1) % personIds.length]!,
+						})),
+					}),
 				};
 				return new Response(JSON.stringify({ draw, repeatedLastYear: false }), { status: 200 });
 			}
@@ -138,8 +147,12 @@ const assignmentLineFor = (giver: string) =>
 		(_, el) => el?.tagName === "LI" && el.textContent?.startsWith(`${giver} → `) === true,
 	);
 
+/** Opts out of the default blind draw, for the tests that assert on pairings. */
+const revealPairings = (user: ReturnType<typeof userEvent.setup>) =>
+	user.click(screen.getByLabelText("Don't show me who drew whom"));
+
 describe("running a match from the admin page", () => {
-	it("defaults to everyone selected, and shows the drafted match", async () => {
+	it("defaults to everyone selected, and draws without revealing the pairings", async () => {
 		stubApi([ANNA, BJORN, CARL]);
 		const user = userEvent.setup();
 		renderAdminPage();
@@ -147,9 +160,40 @@ describe("running a match from the admin page", () => {
 		await screen.findByText("3 of 3 selected");
 		await user.click(screen.getByRole("button", { name: /Run match/ }));
 
+		// It drew, and says who took part...
+		await screen.findByText("3 people");
+		expect(screen.getByText(/Anna, Bjørn, Carl/)).not.toBeNull();
+		// ...but not a single pairing, since the admin takes part too.
+		expect(screen.queryByText(/ → /)).toBeNull();
+		expect(screen.getByText(/Who drew whom is hidden/)).not.toBeNull();
+	});
+
+	it("shows the pairings when the admin opts out of a blind draw", async () => {
+		stubApi([ANNA, BJORN, CARL]);
+		const user = userEvent.setup();
+		renderAdminPage();
+
+		await screen.findByText("3 of 3 selected");
+		await revealPairings(user);
+		await user.click(screen.getByRole("button", { name: /Run match/ }));
+
 		expect(await assignmentLineFor("Anna")).not.toBeNull();
 		expect(await assignmentLineFor("Bjørn")).not.toBeNull();
 		expect(await assignmentLineFor("Carl")).not.toBeNull();
+	});
+
+	it("asks the server to hide them, rather than just not rendering them", async () => {
+		const { drafted } = stubApi([ANNA, BJORN, CARL]);
+		const user = userEvent.setup();
+		renderAdminPage();
+
+		await screen.findByText("3 of 3 selected");
+		await user.click(screen.getByRole("button", { name: /Run match/ }));
+		await screen.findByText("3 people");
+
+		// The distinction that matters: hiding is the server's job, so the
+		// pairings aren't sitting in the network tab waiting to be read.
+		expect(drafted[0]!.blind).toBe(true);
 	});
 
 	it("excludes a deselected person from the request", async () => {
@@ -161,9 +205,9 @@ describe("running a match from the admin page", () => {
 		await screen.findByText("2 of 3 selected");
 		await user.click(screen.getByRole("button", { name: /Run match/ }));
 
-		await assignmentLineFor("Anna");
+		await screen.findByText("2 people");
 		expect(drafted).toHaveLength(1);
-		expect([...drafted[0]!].sort()).toEqual([ANNA.id, BJORN.id].sort());
+		expect([...drafted[0]!.personIds].sort()).toEqual([ANNA.id, BJORN.id].sort());
 	});
 
 	it("disables the run button with fewer than 2 people selected", async () => {
@@ -203,7 +247,7 @@ describe("locking a draft in", () => {
 
 		await screen.findByText("3 of 3 selected");
 		await user.click(screen.getByRole("button", { name: /Run match/ }));
-		await assignmentLineFor("Anna");
+		await screen.findByText("3 people");
 
 		// While it's a draft: re-rollable, and explicitly not final.
 		expect(screen.getByText(/Nothing is final until you lock it in/)).not.toBeNull();
@@ -225,7 +269,7 @@ describe("locking a draft in", () => {
 
 		await screen.findByText("3 of 3 selected");
 		await user.click(screen.getByRole("button", { name: /Run match/ }));
-		await assignmentLineFor("Anna");
+		await screen.findByText("3 people");
 		await user.click(screen.getByRole("button", { name: "Lock in this match" }));
 		await screen.findByText(/Locked in on/);
 
@@ -248,7 +292,7 @@ describe("a draw that's already been run", () => {
 
 		await screen.findByText("3 of 3 selected");
 		await user.click(screen.getByRole("button", { name: /Run match/ }));
-		await assignmentLineFor("Anna");
+		await screen.findByText("3 people");
 		await user.click(screen.getByRole("button", { name: "Lock in this match" }));
 		await screen.findByText(/Locked in on/);
 
@@ -259,6 +303,9 @@ describe("a draw that's already been run", () => {
 		renderAdminPage();
 
 		await screen.findByText(/Locked in on/);
-		expect(await assignmentLineFor("Anna")).not.toBeNull();
+		expect(await screen.findByText("3 people")).not.toBeNull();
+		// Still hidden after the reload — blindness is a property of the
+		// stored draw, not of the click that happened to create it.
+		expect(screen.getByText(/Who drew whom is hidden/)).not.toBeNull();
 	});
 });
