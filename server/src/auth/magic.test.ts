@@ -169,3 +169,44 @@ describe("GET /api/auth/magic/:token", () => {
 		expect(await consumeMagicToken(db, token, SECRET)).toBe(anna.id);
 	});
 });
+
+describe("session cookie flags", () => {
+	it("marks the cookie Secure for a request that arrived over HTTPS", async () => {
+		const app = createApp(db, SECRET);
+		const anna = seed("Anna");
+		const res = await app.request("/api/auth/login", {
+			method: "POST",
+			// What nginx sets when the browser came in on the public subdomain.
+			headers: { "Content-Type": "application/json", "x-forwarded-proto": "https" },
+			body: JSON.stringify({ email: "anna@example.com", password: anna.initialPassword }),
+		});
+
+		expect(res.headers.get("set-cookie")).toContain("Secure");
+	});
+
+	it("leaves it off for plain HTTP, so LAN access still works", async () => {
+		const app = createApp(db, SECRET);
+		const anna = seed("Anna");
+		const res = await app.request("/api/auth/login", {
+			method: "POST",
+			headers: { "Content-Type": "application/json", "x-forwarded-proto": "http" },
+			body: JSON.stringify({ email: "anna@example.com", password: anna.initialPassword }),
+		});
+
+		// A Secure cookie here would never be sent back, and login would appear
+		// to succeed and then immediately not have happened.
+		expect(res.headers.get("set-cookie")).not.toContain("Secure");
+	});
+
+	it("marks it Secure on a magic link followed over HTTPS", async () => {
+		const app = createApp(db, SECRET);
+		const anna = seed("Anna");
+		const token = (await issueMagicToken(db, anna.id, SECRET))!;
+
+		const res = await app.request(`/api/auth/magic/${token}`, {
+			headers: { "x-forwarded-proto": "https" },
+		});
+
+		expect(res.headers.get("set-cookie")).toContain("Secure");
+	});
+});

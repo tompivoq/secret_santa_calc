@@ -21,6 +21,19 @@ interface SessionPayload {
  */
 const SESSION_PURPOSE = "session";
 
+/**
+ * Whether the browser reached the app over HTTPS. nginx proxies to the API
+ * over plain HTTP whichever way the request arrived, so the original
+ * scheme only survives in the forwarded header the proxy sets — the direct
+ * URL always looks like http:// from in here.
+ *
+ * A client could of course send that header itself, but only to ask for a
+ * Secure cookie on a connection that can't return one, which breaks
+ * nothing but their own login.
+ */
+const isHttps = (c: Context): boolean =>
+	c.req.header("x-forwarded-proto") === "https" || new URL(c.req.url).protocol === "https:";
+
 /** Issues a session for `personId` and sets it as an httpOnly cookie on the response. */
 export const createSession = async (
 	c: Context,
@@ -37,8 +50,12 @@ export const createSession = async (
 	setCookie(c, COOKIE_NAME, token, {
 		httpOnly: true,
 		sameSite: "Lax",
-		// Not `secure: true` — this app is served over plain HTTP on the LAN
-		// (see deployment notes), so a Secure cookie would never be sent.
+		// Decided per request rather than once: the app answers both on the
+		// public HTTPS subdomain and on plain HTTP on the LAN. Always setting
+		// it would silently break login on the LAN — the browser would simply
+		// never send the cookie back — and never setting it would leave the
+		// public site's sessions liable to be sent in clear on a downgrade.
+		secure: isHttps(c),
 		path: "/",
 		maxAge: SESSION_LIFETIME_SECONDS,
 	});
