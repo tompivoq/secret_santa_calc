@@ -6,6 +6,7 @@ import { createDb, type Db } from "../db/client.js";
 import { migrationsFolder } from "../db/migrate.js";
 import { people } from "../db/schema.js";
 import { addPerson, setPartner, type CreatedPerson } from "../people/people.js";
+import { getLatestLockedDraw, hasDraft, lockDraft, saveDraft } from "./draws.js";
 
 let db: Db;
 let app: ReturnType<typeof createApp>;
@@ -45,52 +46,88 @@ const asAdmin = async () => {
 	return loginAs("admin@example.com", admin.initialPassword);
 };
 
-const postMatch = (personIds: number[], cookie?: string) =>
-	app.request("/api/matcher", {
+const postDraft = (personIds: number[], cookie?: string, startOver?: boolean) =>
+	app.request("/api/matcher/draft", {
 		method: "POST",
 		headers: { "Content-Type": "application/json", ...(cookie && { cookie }) },
-		body: JSON.stringify({ personIds }),
+		body: JSON.stringify({ personIds, ...(startOver !== undefined && { startOver }) }),
 	});
 
-describe("POST /api/matcher authorization", () => {
+const postLock = (cookie?: string) =>
+	app.request("/api/matcher/lock", {
+		method: "POST",
+		headers: { ...(cookie && { cookie }) },
+	});
+
+const getCurrent = (cookie?: string) =>
+	app.request("/api/matcher/current", { headers: { ...(cookie && { cookie }) } });
+
+interface DraftBody {
+	draw: {
+		id: number;
+		lockedAt: string | null;
+		assignments: { giverId: number; recipientId: number }[];
+	};
+	repeatedLastYear: boolean;
+}
+
+describe("matcher routes: authorization", () => {
 	it("returns 401 without a session", async () => {
 		const anna = seed("Anna");
-		expect((await postMatch([anna.id])).status).toBe(401);
+		expect((await postDraft([anna.id])).status).toBe(401);
+		expect((await postLock()).status).toBe(401);
+		expect((await getCurrent()).status).toBe(401);
 	});
 
 	it("returns 403 for a non-admin", async () => {
 		const anna = seed("Anna");
 		const cookie = await loginAs("anna@example.com", anna.initialPassword);
-		expect((await postMatch([anna.id], cookie)).status).toBe(403);
+		expect((await postDraft([anna.id], cookie)).status).toBe(403);
+		expect((await postLock(cookie)).status).toBe(403);
+		expect((await getCurrent(cookie)).status).toBe(403);
 	});
 });
 
-describe("POST /api/matcher", () => {
-	it("fetches the given people and passes them to the matching logic", async () => {
+describe("POST /api/matcher/draft", () => {
+	it("matches the given people and saves the result as a draft", async () => {
 		const cookie = await asAdmin();
 		const anna = seed("Anna");
 		const bjorn = seed("Bjørn");
 
-		const res = await postMatch([anna.id, bjorn.id], cookie);
+		const res = await postDraft([anna.id, bjorn.id], cookie);
 
 		expect(res.status).toBe(200);
-		const body = (await res.json()) as { id: number }[];
-		expect(body.map((p) => p.id).sort()).toEqual([anna.id, bjorn.id].sort());
+		const body = (await res.json()) as DraftBody;
+		expect(body.draw.lockedAt).toBeNull();
+		expect(body.draw.assignments.map((a) => a.giverId).sort()).toEqual([anna.id, bjorn.id].sort());
+		expect(hasDraft(db)).toBe(true);
+		// A draft is not the official result — nothing is locked yet.
+		expect(getLatestLockedDraw(db)).toBeNull();
+	});
+
+	it("replaces the previous draft when re-rolled", async () => {
+		const cookie = await asAdmin();
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+
+		const first = (await (await postDraft([anna.id, bjorn.id], cookie)).json()) as DraftBody;
+		const second = (await (await postDraft([anna.id, bjorn.id], cookie)).json()) as DraftBody;
+
+		expect(second.draw.id).not.toBe(first.draw.id);
+		const current = (await (await getCurrent(cookie)).json()) as DraftBody["draw"];
+		expect(current.id).toBe(second.draw.id);
 	});
 
 	it("returns 400 if a given personId doesn't exist", async () => {
 		const cookie = await asAdmin();
 		const anna = seed("Anna");
 
-		const res = await postMatch([anna.id, 999_999], cookie);
-
-		expect(res.status).toBe(400);
+		expect((await postDraft([anna.id, 999_999], cookie)).status).toBe(400);
 	});
 
 	it("rejects an empty personIds array", async () => {
 		const cookie = await asAdmin();
-		const res = await postMatch([], cookie);
-		expect(res.status).toBe(400);
+		expect((await postDraft([], cookie)).status).toBe(400);
 	});
 
 	it("returns 422 when no valid matching exists for the given group", async () => {
@@ -99,10 +136,151 @@ describe("POST /api/matcher", () => {
 		const bjorn = seed("Bjørn");
 		setPartner(db, anna.id, bjorn.id);
 
-		// The only two people given are each other's only possible recipient
-		// and each other's partner — no valid assignment exists.
-		const res = await postMatch([anna.id, bjorn.id], cookie);
+		expect((await postDraft([anna.id, bjorn.id], cookie)).status).toBe(422);
+	});
+});
 
-		expect(res.status).toBe(422);
+describe("POST /api/matcher/lock", () => {
+	it("locks the draft in, freezing exactly what was drafted", async () => {
+		const cookie = await asAdmin();
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+		const drafted = (await (await postDraft([anna.id, bjorn.id], cookie)).json()) as DraftBody;
+
+		const res = await postLock(cookie);
+
+		expect(res.status).toBe(200);
+		const locked = (await res.json()) as DraftBody["draw"];
+		expect(locked.id).toBe(drafted.draw.id);
+		expect(locked.lockedAt).not.toBeNull();
+		expect(locked.assignments).toEqual(drafted.draw.assignments);
+	});
+
+	it("returns 409 when there's no draft to lock", async () => {
+		const cookie = await asAdmin();
+		expect((await postLock(cookie)).status).toBe(409);
+	});
+
+	it("returns 409 rather than re-locking an already-locked draw", async () => {
+		const cookie = await asAdmin();
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+		await postDraft([anna.id, bjorn.id], cookie);
+		await postLock(cookie);
+
+		expect((await postLock(cookie)).status).toBe(409);
+	});
+});
+
+describe("drafting again once the draw is locked in", () => {
+	it("refuses without startOver, so an accidental click can't re-draw", async () => {
+		const cookie = await asAdmin();
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+		await postDraft([anna.id, bjorn.id], cookie);
+		const locked = (await (await postLock(cookie)).json()) as DraftBody["draw"];
+
+		const res = await postDraft([anna.id, bjorn.id], cookie);
+
+		expect(res.status).toBe(409);
+		// ...and the locked draw is untouched.
+		expect(getLatestLockedDraw(db)!.id).toBe(locked.id);
+	});
+
+	it("starts a new draft alongside the locked draw when startOver is given", async () => {
+		const cookie = await asAdmin();
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+		await postDraft([anna.id, bjorn.id], cookie);
+		const locked = (await (await postLock(cookie)).json()) as DraftBody["draw"];
+
+		const res = await postDraft([anna.id, bjorn.id], cookie, true);
+
+		expect(res.status).toBe(200);
+		const body = (await res.json()) as DraftBody;
+		expect(body.draw.id).not.toBe(locked.id);
+		// The locked draw stays the official result until the new one is locked.
+		expect(getLatestLockedDraw(db)!.id).toBe(locked.id);
+	});
+
+	it("doesn't ask for startOver again while re-rolling that new draft", async () => {
+		const cookie = await asAdmin();
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+		await postDraft([anna.id, bjorn.id], cookie);
+		await postLock(cookie);
+		await postDraft([anna.id, bjorn.id], cookie, true);
+
+		// Nothing has been committed to since, so this is just another re-roll.
+		expect((await postDraft([anna.id, bjorn.id], cookie)).status).toBe(200);
+	});
+});
+
+// The fallback-to-allowing-repeats path is covered directly, and
+// deterministically, in matching_logic.test.ts — a real locked draw is
+// always a full permutation, which makes it genuinely hard to construct one
+// that leaves the next draw unsolvable. What's worth pinning down here is
+// that the route feeds last year's pairings in at all.
+describe("avoiding last year's pairings", () => {
+	it("doesn't repeat the locked draw's pairings in the next draw", async () => {
+		const cookie = await asAdmin();
+		const [anna, bjorn, carl] = [seed("Anna"), seed("Bjørn"), seed("Carl")];
+		// Seeded directly rather than drawn, so "last year" is exact: with
+		// three people there are only two possible assignments, and this is
+		// one of them — leaving exactly one valid non-repeating answer.
+		saveDraft(
+			db,
+			new Map([
+				[anna.id, bjorn.id],
+				[bjorn.id, carl.id],
+				[carl.id, anna.id],
+			]),
+		);
+		lockDraft(db);
+
+		const body = (await (
+			await postDraft([anna.id, bjorn.id, carl.id], cookie, true)
+		).json()) as DraftBody;
+
+		expect(body.repeatedLastYear).toBe(false);
+		expect(new Map(body.draw.assignments.map((a) => [a.giverId, a.recipientId]))).toEqual(
+			new Map([
+				[anna.id, carl.id],
+				[carl.id, bjorn.id],
+				[bjorn.id, anna.id],
+			]),
+		);
+	});
+
+	it("reports no repeats when there was no previous draw to repeat", async () => {
+		const cookie = await asAdmin();
+		const ids = [seed("Anna"), seed("Bjørn"), seed("Carl")].map((p) => p.id);
+
+		const body = (await (await postDraft(ids, cookie)).json()) as DraftBody;
+
+		expect(body.repeatedLastYear).toBe(false);
+	});
+});
+
+describe("GET /api/matcher/current", () => {
+	it("returns null before any draw has been run", async () => {
+		const cookie = await asAdmin();
+		const res = await getCurrent(cookie);
+
+		expect(res.status).toBe(200);
+		expect(await res.json()).toBeNull();
+	});
+
+	it("returns the locked draw once there's no draft in progress", async () => {
+		const cookie = await asAdmin();
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+		await postDraft([anna.id, bjorn.id], cookie);
+		await postLock(cookie);
+
+		const current = (await (await getCurrent(cookie)).json()) as DraftBody["draw"];
+
+		expect(current.lockedAt).not.toBeNull();
+		expect(current.assignments).toHaveLength(2);
 	});
 });
