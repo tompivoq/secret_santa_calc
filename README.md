@@ -7,13 +7,19 @@ The frontend talks to a small backend API ([server/](server)) which persists
 people and their pairings in a SQLite database — so the list survives a
 refresh, a browser restart, or a different device hitting the same server.
 
-Each person also gets a login (`/login`, `/account`) so they can eventually
-see who they're matched with. Creating a person generates an initial
-password, shown once to whoever added them; the person is required to set
-their own password the first time they log in. **The actual matching/draw
-— assigning each person a recipient — isn't implemented yet**, so `/account`
-currently just shows a placeholder once a person is past their forced
-password change.
+Each person gets a login (`/login`, `/account`) where they see the one
+person they're giving to — and nobody else's. Creating a person generates
+an initial password, shown once to whoever added them; they're required to
+replace it the first time they log in, unless they arrive by emailed login
+link instead, which retires it for them.
+
+The admin runs the draw from `/`: pick who's taking part, run it, re-roll
+until happy, then lock it in. A locked draw is immutable history, which is
+also how the next one knows not to repeat last year's pairings. By default
+the pairings are withheld from the admin too, so they can take part
+without spoiling their own match, and the server enforces that rather than
+the page merely not rendering them. Locking in unlocks the last step:
+emailing everyone a single-use link straight to their own match.
 
 ## Stack
 
@@ -32,8 +38,9 @@ password change.
 
 - [Hono](https://hono.dev) — lightweight HTTP framework, running on
   [@hono/node-server](https://github.com/honojs/node-server)
-- [Drizzle ORM](https://orm.drizzle.team) + `better-sqlite3` — a `people`
-  table and a `credentials` table (one login per person); migrations live
+- [Drizzle ORM](https://orm.drizzle.team) + `better-sqlite3` — `people`,
+  `credentials` (one login per person), and `draws`/`assignments` (one row
+  per run of the draw, and who gives to whom within it); migrations live
   in `server/src/db/migrations`
 - [Zod](https://zod.dev) — request body validation
 - Sessions are JWTs (`hono/jwt`) in an httpOnly cookie; passwords are
@@ -100,14 +107,14 @@ npm start       # runs the compiled server (see the env vars below)
 All optional in development — the server runs without any of them, and
 says what it's falling back to.
 
-| Variable         | Purpose                                                                 |
-| ---------------- | ----------------------------------------------------------------------- |
-| `PORT`           | Port to listen on. Defaults to 3001.                                     |
-| `DATABASE_PATH`  | SQLite file. Defaults to `./data/db.sqlite`.                             |
-| `AUTH_SECRET`    | JWT signing secret. Generated and persisted beside the database if unset.|
-| `APP_BASE_URL`   | How the app is reached from outside — what emailed login links point at. |
-| `RESEND_API_KEY` | Resend API key, for sending match emails.                                |
-| `MAIL_FROM`      | Sender address on those emails, e.g. `Julenissen <santa@example.com>`.   |
+| Variable         | Purpose                                                                   |
+| ---------------- | ------------------------------------------------------------------------- |
+| `PORT`           | Port to listen on. Defaults to 3001.                                      |
+| `DATABASE_PATH`  | SQLite file. Defaults to `./data/db.sqlite`.                              |
+| `AUTH_SECRET`    | JWT signing secret. Generated and persisted beside the database if unset. |
+| `APP_BASE_URL`   | How the app is reached from outside — what emailed login links point at.  |
+| `RESEND_API_KEY` | Resend API key, for sending match emails.                                 |
+| `MAIL_FROM`      | Sender address on those emails, e.g. `Julenissen <santa@example.com>`.    |
 
 `APP_BASE_URL` has no sensible default for a deployed service, so set it
 to wherever the app actually answers, including any path prefix. It's used
