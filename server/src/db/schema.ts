@@ -47,3 +47,47 @@ export const credentials = sqliteTable("credentials", {
 
 export type CredentialsRow = typeof credentials.$inferSelect;
 export type NewCredentialsRow = typeof credentials.$inferInsert;
+
+/**
+ * One run of the draw. Starts unlocked (a draft the admin can re-roll as
+ * many times as they like) and becomes read-only history once locked in.
+ *
+ * Drafts are persisted rather than kept in memory so that locking in
+ * freezes exactly the assignment the admin looked at and approved —
+ * re-running the (randomized) matching at lock time would freeze one they
+ * never saw. At most one unlocked draft exists at a time; see draws.ts.
+ *
+ * No `year` column: "which draw came before this one" is what the
+ * repeat-avoidance in matching_logic.ts actually needs, and row order
+ * already answers that. A year would only add a second, disagreeable
+ * source of truth for the same question.
+ */
+export const draws = sqliteTable("draws", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+	/** Null while this is still a draft. Set once, when the admin locks it in. */
+	lockedAt: integer("locked_at", { mode: "timestamp" }),
+});
+
+export type DrawRow = typeof draws.$inferSelect;
+
+/**
+ * Who gives to whom within one draw. Cascades from both sides: deleting a
+ * person removes the rows they give or receive in, which degrades to
+ * "whoever was giving to them is shown as unmatched" rather than leaving a
+ * row pointing at someone who no longer exists.
+ */
+export const assignments = sqliteTable("assignments", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	drawId: integer("draw_id")
+		.notNull()
+		.references(() => draws.id, { onDelete: "cascade" }),
+	giverId: integer("giver_id")
+		.notNull()
+		.references(() => people.id, { onDelete: "cascade" }),
+	recipientId: integer("recipient_id")
+		.notNull()
+		.references(() => people.id, { onDelete: "cascade" }),
+});
+
+export type AssignmentRow = typeof assignments.$inferSelect;
