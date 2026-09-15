@@ -31,6 +31,7 @@ export const Button = ({ className, behaviour = "neutral", ...props }: ButtonPro
 		<button
 			type="button"
 			className={clsx(
+				"flex flex-row items-center gap-2",
 				"w-fit cursor-pointer rounded-md border",
 				getClassNamesForBehaviour(behaviour, props.disabled),
 				"px-3 py-1.5 text-sm",

@@ -8,15 +8,8 @@ import {
 } from "../store/peopleApi";
 import { findPartner } from "../utils/person_utils";
 import { reject } from "lodash-es";
-import clsx from "clsx";
-
-const buttonClasses = (variant: "neutral" | "danger" = "neutral") =>
-	clsx(
-		"cursor-pointer rounded-md border px-3 py-2 text-sm",
-		variant === "danger"
-			? "border-red-700 text-red-700 hover:bg-red-50 dark:border-red-400 dark:text-red-400 dark:hover:bg-red-950"
-			: "border-gray-700 hover:bg-gray-100 dark:border-gray-300 dark:hover:bg-gray-800",
-	);
+import { Button } from "./shared/Button";
+import { FaRegTrashCan } from "react-icons/fa6";
 
 interface PersonSelectProps {
 	id: string;
@@ -28,15 +21,15 @@ interface PersonSelectProps {
 
 /** A "pick one of the other people, or nobody" dropdown — partner, last year's match. */
 const PersonSelect = ({ id, label, value, options, onChange }: PersonSelectProps) => (
-	<div className="flex w-44 flex-row items-center justify-stretch">
-		<label htmlFor={id} className="text-sm font-semibold">
+	<div className="flex flex-row items-center">
+		<label htmlFor={id} className="min-w-fit text-sm font-semibold">
 			{label}
 		</label>
 		<select
 			id={id}
 			value={value ?? ""}
 			onChange={(event) => onChange(event.target.value === "" ? null : Number(event.target.value))}
-			className="border-border-blue-spruce-400 mx-2 w-full rounded-md border px-2.5 py-2 text-base"
+			className="border-border-blue-spruce-400 mx-2 w-32 rounded-md border px-2.5 py-2 text-sm"
 		>
 			<option value="">None</option>
 			{options.map((p) => (
@@ -72,58 +65,57 @@ const ListPerson = ({
 	return (
 		<li
 			key={person.id}
-			className="border-blue-spruce-400 flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"
+			className="border-blue-spruce-400 flex flex-row gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"
 		>
-			<div className="flex items-center gap-3">
-				<input
-					type="checkbox"
-					aria-label={`Include ${person.name} in the next match`}
-					checked={selected}
-					onChange={onToggleSelected}
-					className="size-4 shrink-0"
-				/>
-				<div>
-					<p className="font-medium">{person.name}</p>
-					<p className="text-sm">
+			<div className="flex grow flex-col">
+				<div className="mb-2 flex flex-row items-baseline">
+					<input
+						type="checkbox"
+						aria-label={`Include ${person.name} in the next match`}
+						title={`Include ${person.name} in the next match`}
+						checked={selected}
+						onChange={onToggleSelected}
+						className="mr-3 size-4"
+					/>
+					<p className="grow text-lg font-medium">{person.name}</p>
+					<p className="text-base">
 						{person.email} | {person.phone}
 					</p>
 				</div>
-			</div>
-
-			<div className="flex flex-wrap items-center gap-2">
-				<PersonSelect
-					id={`partner-${person.id}`}
-					label="Partner"
-					value={partner?.id}
-					options={others}
-					onChange={(partnerId) => onSetPartner(person.id, partnerId)}
-				/>
-				<PersonSelect
-					id={`last-year-${person.id}`}
-					label="Last year"
-					value={person.lastYearRecipientId}
-					options={others}
-					onChange={(recipientId) => onSetLastYear(person.id, recipientId)}
-				/>
-				{pendingDelete === true ? (
-					<div className="flex items-center gap-2">
-						<span className="text-sm">Delete {person.name}?</span>
-						<button type="button" onClick={onDelete} className={buttonClasses("danger")}>
-							Confirm
-						</button>
-						<button
-							type="button"
-							onClick={() => setPendingDelete(false)}
-							className={buttonClasses()}
-						>
-							Cancel
-						</button>
-					</div>
-				) : (
-					<button type="button" onClick={() => setPendingDelete(true)} className={buttonClasses()}>
-						Delete
-					</button>
-				)}
+				<div className="flex w-full flex-row items-center justify-center gap-2">
+					<PersonSelect
+						id={`partner-${person.id}`}
+						label="Partner"
+						value={partner?.id}
+						options={others}
+						onChange={(partnerId) => onSetPartner(person.id, partnerId)}
+					/>
+					<PersonSelect
+						id={`last-year-${person.id}`}
+						label="Last year"
+						value={person.lastYearRecipientId}
+						options={others}
+						onChange={(recipientId) => onSetLastYear(person.id, recipientId)}
+					/>
+				</div>
+				<div className="flex flex-row justify-end">
+					{pendingDelete === true ? (
+						<div className="flex items-center gap-2">
+							<span className="text-sm">Delete {person.name}?</span>
+							<Button behaviour="destructive" onClick={onDelete}>
+								Confirm
+							</Button>
+							<Button behaviour="neutral" onClick={() => setPendingDelete(false)}>
+								Cancel
+							</Button>
+						</div>
+					) : (
+						<Button behaviour="destructive" onClick={() => setPendingDelete(true)}>
+							<FaRegTrashCan className="size-3" />
+							<span>Delete</span>
+						</Button>
+					)}
+				</div>
 			</div>
 		</li>
 	);
