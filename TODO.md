@@ -21,9 +21,25 @@ to each person, and avoiding last year's pairings. What's left is small:
 
 ## Match-notification email
 
-Nothing built yet, and now the only substantial thing left. Send each
-person an email letting them know their match is ready to view — the
-assignment it refers to now exists and is stored, so this is unblocked.
+In progress. Decided on **option B (magic link)**, below.
+
+**Built so far:**
+
+- `mail/mailer.ts` — a `send({to, subject, html, text})` seam with Resend
+  behind it, falling back to logging when `RESEND_API_KEY`/`MAIL_FROM`
+  aren't set.
+- `auth/magic.ts` + `GET /api/auth/magic/:token` — single-use login links.
+
+**Still to do:** `notifiedAt`, the actual email content, the endpoint and
+button that send it, and the frontend handling of
+`/login?error=link-expired`.
+
+**Blocked on a decision:** where an emailed link should point. The app is
+LAN-only at `192.168.1.26:8090`, so a link to it only works for someone on
+the home network. Either that's fine (everyone's there at Christmas), or
+the app needs to be reachable from outside before the email is worth
+sending. Whichever, the sending code needs an `APP_BASE_URL` to build
+links from — it shouldn't hardcode the LAN address.
 
 **1. What triggers the send**
 
@@ -86,3 +102,17 @@ assignment it refers to now exists and is stored, so this is unblocked.
 - Skip (or nudge first) anyone still sitting on their initial,
   never-confirmed password when the draw runs — get them logged in and
   their password set _before_ the draw, not after.
+
+**6. Two things the magic-link work turned up**
+
+- **Link prefetching can spend a link before the human clicks it.** Some
+  mail providers and corporate scanners follow links to check them, and
+  these are single-use. Family webmail mostly doesn't, so this is a risk
+  rather than a certainty — but if it bites, the fix is a landing page with
+  a button that POSTs, instead of consuming on GET.
+- **No way back to password login once a link retires someone's initial
+  password.** Following a link replaces a never-chosen initial password
+  with an unusable one, so from then on that person is magic-link-only.
+  Fine on purpose — this is a once-a-year login — but there's no
+  self-service reset and no admin "resend password" either, so the only
+  route back in is another link.
