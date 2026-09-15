@@ -43,6 +43,7 @@ interface DrawState {
 	lockedAt: string | null;
 	blind: boolean;
 	participantIds: number[];
+	notifiedIds: number[];
 	assignments?: { id: number; drawId: number; giverId: number; recipientId: number }[];
 }
 
@@ -53,7 +54,10 @@ interface DrawState {
  * server behaves. The matching itself is the server's job and is covered by
  * its own suite; this fake just cycles everyone in list order.
  */
-const stubApi = (people: Person[], options: { onDraft?: () => Response } = {}) => {
+const stubApi = (
+	people: Person[],
+	options: { onDraft?: () => Response; onNotify?: () => Response } = {},
+) => {
 	let draw: DrawState | null = null;
 	let nextId = 1;
 	/** Each draft request's body, for asserting on what the page actually asked for. */
@@ -93,6 +97,7 @@ const stubApi = (people: Person[], options: { onDraft?: () => Response } = {}) =
 					lockedAt: null,
 					blind: blind !== false,
 					participantIds: personIds,
+					notifiedIds: [],
 					// Withheld for a blind draw, exactly as the real server does —
 					// so a test that finds pairings on screen proves they were sent.
 					...(blind === false && {
@@ -115,6 +120,26 @@ const stubApi = (people: Person[], options: { onDraft?: () => Response } = {}) =
 				}
 				draw = { ...draw, lockedAt: new Date().toISOString() };
 				return new Response(JSON.stringify(draw), { status: 200 });
+			}
+
+			if (url.pathname === "/api/matcher/notify" && request.method === "POST") {
+				const { personIds } = (await request.json()) as { personIds?: number[] };
+				if (options.onNotify) {
+					return options.onNotify();
+				}
+				const targets =
+					personIds ?? draw!.participantIds.filter((id) => !draw!.notifiedIds.includes(id));
+				draw = { ...draw!, notifiedIds: [...new Set([...draw!.notifiedIds, ...targets])] };
+				return new Response(
+					JSON.stringify({
+						notified: targets.map((id) => ({
+							personId: id,
+							name: people.find((p) => p.id === id)?.name ?? "Unknown",
+						})),
+						failed: [],
+					}),
+					{ status: 200 },
+				);
 			}
 
 			return new Response(null, { status: 204 });
@@ -281,6 +306,72 @@ describe("locking a draft in", () => {
 
 		await user.click(screen.getByRole("button", { name: "Cancel" }));
 		expect(screen.queryByText(/Everyone's match will change/)).toBeNull();
+	});
+});
+
+describe("emailing people their link", () => {
+	const drawAndLock = async (user: ReturnType<typeof userEvent.setup>) => {
+		await screen.findByText("3 of 3 selected");
+		await user.click(screen.getByRole("button", { name: /Run match/ }));
+		await screen.findByText("3 people");
+		await user.click(screen.getByRole("button", { name: "Lock in this match" }));
+		await screen.findByText(/Locked in on/);
+	};
+
+	it("is offered only once the draw is locked in", async () => {
+		stubApi([ANNA, BJORN, CARL]);
+		const user = userEvent.setup();
+		renderAdminPage();
+
+		await screen.findByText("3 of 3 selected");
+		await user.click(screen.getByRole("button", { name: /Run match/ }));
+		await screen.findByText("3 people");
+
+		// Still a draft: it can still be re-rolled, so nobody may be told yet.
+		expect(screen.queryByRole("button", { name: /Email the/ })).toBeNull();
+
+		await user.click(screen.getByRole("button", { name: "Lock in this match" }));
+
+		expect(await screen.findByRole("button", { name: /Email the 3 still waiting/ })).not.toBeNull();
+	});
+
+	it("tracks who has been emailed, and offers a resend once everyone has", async () => {
+		stubApi([ANNA, BJORN, CARL]);
+		const user = userEvent.setup();
+		renderAdminPage();
+		await drawAndLock(user);
+
+		expect(screen.getByText("0 of 3 have been emailed their link.")).not.toBeNull();
+
+		await user.click(screen.getByRole("button", { name: /Email the 3 still waiting/ }));
+
+		await screen.findByText("3 of 3 have been emailed their link.");
+		expect(screen.getByText(/Emailed Anna, Bjørn, Carl/)).not.toBeNull();
+		// Nobody left waiting, so the offer changes to resending.
+		expect(screen.queryByRole("button", { name: /still waiting/ })).toBeNull();
+		expect(screen.getByRole("button", { name: /Send everyone their link again/ })).not.toBeNull();
+	});
+
+	it("names the people whose emails failed, rather than just counting them", async () => {
+		stubApi([ANNA, BJORN, CARL], {
+			onNotify: () =>
+				new Response(
+					JSON.stringify({
+						notified: [{ personId: ANNA.id, name: "Anna" }],
+						failed: [{ personId: BJORN.id, name: "Bjørn", error: "Domain is not verified" }],
+					}),
+					{ status: 200 },
+				),
+		});
+		const user = userEvent.setup();
+		renderAdminPage();
+		await drawAndLock(user);
+
+		await user.click(screen.getByRole("button", { name: /Email the 3 still waiting/ }));
+
+		// The admin has to know who to chase; a count alone wouldn't say.
+		await screen.findByText(/Bjørn — Domain is not verified/);
+		expect(screen.getByText(/couldn't be emailed/)).not.toBeNull();
 	});
 });
 

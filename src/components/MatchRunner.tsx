@@ -4,6 +4,7 @@ import {
 	useCurrentDrawQuery,
 	useDraftMutation,
 	useLockDrawMutation,
+	useNotifyMutation,
 	type Draw,
 } from "../store/matcherApi";
 import { Button } from "./shared/Button";
@@ -61,6 +62,81 @@ const DrawSummary = ({ draw, nameById }: { draw: Draw; nameById: Map<number, str
 				</li>
 			))}
 		</ul>
+	);
+};
+
+/**
+ * Emailing everyone their login link. Only shown for a locked draw —
+ * there's deliberately no way to tell anyone about a draft.
+ */
+const NotifyPanel = ({ draw, nameById }: { draw: Draw; nameById: Map<number, string> }) => {
+	const [notify, { data: result, error, isLoading }] = useNotifyMutation();
+
+	const waiting = draw.participantIds.filter((id) => !draw.notifiedIds.includes(id));
+
+	return (
+		<div className="border-blue-spruce-400 flex flex-col gap-2 border-t pt-3">
+			<p className="text-sm">
+				{draw.notifiedIds.length} of {draw.participantIds.length} have been emailed their link.
+			</p>
+
+			{waiting.length > 0 ? (
+				<div>
+					<Button
+						type="button"
+						behaviour="action"
+						disabled={isLoading}
+						onClick={() => void notify({})}
+					>
+						{isLoading ? "Sending…" : `Email the ${waiting.length} still waiting`}
+					</Button>
+					<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+						Still to hear: {waiting.map((id) => nameById.get(id) ?? "Unknown").join(", ")}.
+					</p>
+				</div>
+			) : (
+				<div>
+					<Button
+						type="button"
+						behaviour="neutral"
+						disabled={isLoading}
+						onClick={() => void notify({ personIds: draw.participantIds })}
+					>
+						{isLoading ? "Sending…" : "Send everyone their link again"}
+					</Button>
+					<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+						Everyone has been emailed. Sending again issues fresh links and retires the old ones.
+					</p>
+				</div>
+			)}
+
+			{error && (
+				<p className="text-sm text-red-600 dark:text-red-400">
+					Couldn't send the emails. Please try again.
+				</p>
+			)}
+
+			{result && result.notified.length > 0 && (
+				<p className="text-sm">
+					Emailed {result.notified.map((person) => person.name).join(", ")}.
+				</p>
+			)}
+
+			{result && result.failed.length > 0 && (
+				<div className="text-sm text-red-600 dark:text-red-400">
+					{/* Named individually: the admin has to know who to chase, and a
+					    count alone wouldn't tell them. */}
+					<p>These couldn't be emailed — they'll be retried next time:</p>
+					<ul className="mt-1 flex flex-col gap-1">
+						{result.failed.map((person) => (
+							<li key={person.personId}>
+								{person.name} — {person.error}
+							</li>
+						))}
+					</ul>
+				</div>
+			)}
+		</div>
 	);
 };
 
@@ -171,6 +247,8 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 					)}
 
 					<DrawSummary draw={currentDraw} nameById={nameById} />
+
+					{isLocked && <NotifyPanel draw={currentDraw} nameById={nameById} />}
 
 					{isLocked ? (
 						confirmingStartOver ? (

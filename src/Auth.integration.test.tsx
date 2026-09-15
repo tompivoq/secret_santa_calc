@@ -154,6 +154,15 @@ describe("logging in", () => {
 		await screen.findByText("You haven't been matched yet — check back after the draw.");
 	});
 
+	it("explains an expired magic link rather than silently showing the login form", async () => {
+		stubAuthApi();
+		renderAt("/login?error=link-expired");
+
+		// Where GET /api/auth/magic/:token redirects a link that's already been
+		// followed. Without this it looks like an unexplained trip to /login.
+		await screen.findByText(/That login link has already been used or has expired/);
+	});
+
 	it("shows an error and stays on the login page for the wrong password", async () => {
 		stubAuthApi();
 		const user = userEvent.setup();

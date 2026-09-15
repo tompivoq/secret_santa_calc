@@ -16,6 +16,8 @@ export interface Draw {
 	blind: boolean;
 	/** Who took part. Always present, even when the pairings aren't. */
 	participantIds: number[];
+	/** Who has been emailed their link. Safe to know even for a blind draw. */
+	notifiedIds: number[];
 	/**
 	 * Absent for a blind draw, and absent from the response itself rather
 	 * than merely unrendered — there's nothing here to reveal.
@@ -35,6 +37,17 @@ export interface DraftRequest {
 	startOver?: boolean;
 	/** Withhold the pairings from the admin too. Defaults to true server-side. */
 	blind?: boolean;
+}
+
+export interface NotifyRequest {
+	/** Omitted emails everyone not yet told; naming people re-sends to those. */
+	personIds?: number[];
+}
+
+export interface NotifyResult {
+	notified: { personId: number; name: string }[];
+	/** Per person: one bad address doesn't stop the rest going out. */
+	failed: { personId: number; name: string; error: string }[];
 }
 
 export interface MyMatch {
@@ -66,6 +79,10 @@ export const matcherApi = createApi({
 			query: () => ({ url: "lock", method: "POST" }),
 			invalidatesTags: ["Draw"],
 		}),
+		notify: builder.mutation<NotifyResult, NotifyRequest>({
+			query: (body) => ({ url: "notify", method: "POST", body }),
+			invalidatesTags: ["Draw"],
+		}),
 		// The signed-in person's own match. Tagged alongside the admin's view
 		// so that locking a draw in refreshes this too, rather than leaving an
 		// admin who's also a participant looking at a stale "not matched yet".
@@ -76,5 +93,10 @@ export const matcherApi = createApi({
 	}),
 });
 
-export const { useCurrentDrawQuery, useDraftMutation, useLockDrawMutation, useMyMatchQuery } =
-	matcherApi;
+export const {
+	useCurrentDrawQuery,
+	useDraftMutation,
+	useLockDrawMutation,
+	useNotifyMutation,
+	useMyMatchQuery,
+} = matcherApi;

@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import clsx from "clsx";
 import { authApi, useLoginMutation } from "../store/authApi";
@@ -18,6 +18,8 @@ const inputClasses = (hasError: boolean) =>
 
 function LoginPage() {
 	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
+	const linkExpired = searchParams.get("error") === "link-expired";
 	const dispatch = useDispatch<AppDispatch>();
 	const [login, { isLoading }] = useLoginMutation();
 	const {
@@ -50,7 +52,15 @@ function LoginPage() {
 	};
 
 	return (
-		<div className="mt-8 flex rounded-xl border border-gray-400 p-5">
+		<div className="mt-8 flex flex-col gap-4 rounded-xl border border-gray-400 p-5">
+			{linkExpired && (
+				// Where /api/auth/magic/:token redirects a link that's already been
+				// followed, or has expired. Without this it would look like an
+				// ordinary trip to the login page, for no apparent reason.
+				<p className="text-left text-sm text-red-600 dark:text-red-400">
+					That login link has already been used or has expired. Ask for a new one, or log in below.
+				</p>
+			)}
 			<form
 				className="flex w-full flex-col items-stretch gap-4 text-left"
 				onSubmit={handleSubmit(onSubmit)}
