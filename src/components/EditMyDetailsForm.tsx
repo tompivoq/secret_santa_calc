@@ -1,21 +1,10 @@
 import { useForm } from "react-hook-form";
-import clsx from "clsx";
-import type { Person, PhoneNumber } from "../models/person";
-import { isPhoneNumber } from "../models/type_check";
+import type { Person } from "../models/person";
 import { useUpdateMeMutation } from "../store/authApi";
 import { Button } from "./shared/Button";
+import { PersonDetailFields, type PersonDetailValues } from "./shared/PersonDetailFields";
 
-interface FormData {
-	name: string;
-	email: string;
-	phone: PhoneNumber;
-}
-
-const inputClasses = (hasError: boolean) =>
-	clsx(
-		"rounded-md border px-2.5 py-2 text-base dark:border-gray-700",
-		hasError ? "border-red-500 dark:border-red-500" : "border-gray-300",
-	);
+type FormData = PersonDetailValues;
 
 /** Narrows RTK Query's opaque mutation error down to "the server returned this HTTP status". */
 const errorStatus = (error: unknown): number | undefined =>
@@ -66,64 +55,12 @@ function EditMyDetailsForm({ person, onDone }: EditMyDetailsFormProps) {
 
 	return (
 		<form className="flex flex-col items-stretch gap-4 text-left" onSubmit={handleSubmit(onSubmit)}>
-			<div className="flex flex-col gap-1">
-				<label htmlFor="me-name" className="text-sm font-semibold">
-					Name
-				</label>
-				<input
-					id="me-name"
-					type="text"
-					{...register("name", { required: "A name is required" })}
-					className={inputClasses(!!errors.name)}
-				/>
-				{errors.name && (
-					<span className="text-sm text-red-600 dark:text-red-400">{errors.name.message}</span>
-				)}
-			</div>
-
-			<div className="flex flex-col gap-1">
-				<label htmlFor="me-email" className="text-sm font-semibold">
-					Email
-				</label>
-				<input
-					id="me-email"
-					type="email"
-					{...register("email", {
-						required: "You need to input a valid email",
-						pattern: {
-							value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-							message: "Please enter a valid email address",
-						},
-					})}
-					className={inputClasses(!!errors.email)}
-				/>
-				{errors.email && (
-					<span className="text-sm text-red-600 dark:text-red-400">{errors.email.message}</span>
-				)}
-				<span className="text-sm text-gray-600 dark:text-gray-400">
-					This is also what you log in with, and where your match link is sent.
-				</span>
-			</div>
-
-			<div className="flex flex-col gap-1">
-				<label htmlFor="me-phone" className="text-sm font-semibold">
-					Phone
-				</label>
-				<input
-					id="me-phone"
-					type="tel"
-					pattern="[0-9]{8}"
-					{...register("phone", {
-						required: "A phone number is required",
-						valueAsNumber: true,
-						validate: (value) => isPhoneNumber(value) || "Not a valid phonenumber",
-					})}
-					className={inputClasses(!!errors.phone)}
-				/>
-				{errors.phone && (
-					<span className="text-sm text-red-600 dark:text-red-400">{errors.phone.message}</span>
-				)}
-			</div>
+			<PersonDetailFields
+				idPrefix="me-"
+				register={register}
+				errors={errors}
+				emailNote="This is also what you log in with, and where your match link is sent."
+			/>
 
 			{errors.root && (
 				<span className="text-sm text-red-600 dark:text-red-400">{errors.root.message}</span>

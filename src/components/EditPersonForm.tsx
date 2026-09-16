@@ -1,23 +1,13 @@
 import { useForm } from "react-hook-form";
-import clsx from "clsx";
-import type { Person, PhoneNumber } from "../models/person";
-import { isPhoneNumber } from "../models/type_check";
+import type { Person } from "../models/person";
 import { useUpdatePersonMutation } from "../store/peopleApi";
 import { Button } from "./shared/Button";
+import { PersonDetailFields, type PersonDetailValues } from "./shared/PersonDetailFields";
 
-interface FormData {
-	name: string;
-	email: string;
-	phone: PhoneNumber;
+interface FormData extends PersonDetailValues {
 	partnerId: number | null;
 	lastYearRecipientId: number | null;
 }
-
-const inputClasses = (hasError: boolean) =>
-	clsx(
-		"rounded-md border px-2.5 py-2 text-base dark:border-gray-700",
-		hasError ? "border-red-500 dark:border-red-500" : "border-gray-300",
-	);
 
 /** Narrows RTK Query's opaque mutation error down to "the server returned this HTTP status". */
 const errorStatus = (error: unknown): number | undefined =>
@@ -73,61 +63,7 @@ function EditPersonForm({ person, others, onDone }: EditPersonFormProps) {
 
 	return (
 		<form className="flex flex-col items-stretch gap-4" onSubmit={handleSubmit(onSubmit)}>
-			<div className="flex flex-col gap-1">
-				<label htmlFor="edit-name" className="text-sm font-semibold">
-					Name
-				</label>
-				<input
-					id="edit-name"
-					type="text"
-					{...register("name", { required: "A name is required" })}
-					className={inputClasses(!!errors.name)}
-				/>
-				{errors.name && (
-					<span className="text-sm text-red-600 dark:text-red-400">{errors.name.message}</span>
-				)}
-			</div>
-
-			<div className="flex flex-col gap-1">
-				<label htmlFor="edit-email" className="text-sm font-semibold">
-					Email
-				</label>
-				<input
-					id="edit-email"
-					type="email"
-					{...register("email", {
-						required: "You need to input a valid email",
-						pattern: {
-							value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-							message: "Please enter a valid email address",
-						},
-					})}
-					className={inputClasses(!!errors.email)}
-				/>
-				{errors.email && (
-					<span className="text-sm text-red-600 dark:text-red-400">{errors.email.message}</span>
-				)}
-			</div>
-
-			<div className="flex flex-col gap-1">
-				<label htmlFor="edit-phone" className="text-sm font-semibold">
-					Phone
-				</label>
-				<input
-					id="edit-phone"
-					type="tel"
-					pattern="[0-9]{8}"
-					{...register("phone", {
-						required: "A phone number is required",
-						valueAsNumber: true,
-						validate: (value) => isPhoneNumber(value) || "Not a valid phonenumber",
-					})}
-					className={inputClasses(!!errors.phone)}
-				/>
-				{errors.phone && (
-					<span className="text-sm text-red-600 dark:text-red-400">{errors.phone.message}</span>
-				)}
-			</div>
+			<PersonDetailFields idPrefix="edit-" register={register} errors={errors} />
 
 			<div className="flex flex-col gap-1">
 				<label htmlFor="edit-partner" className="text-sm font-semibold">
