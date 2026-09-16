@@ -8,6 +8,15 @@ export interface NewPerson {
 	partnerId?: number | null;
 }
 
+/** Any subset of a person's editable fields — everything the edit form can change. */
+export interface PersonUpdate {
+	name?: string;
+	email?: string;
+	phone?: number;
+	partnerId?: number | null;
+	lastYearRecipientId?: number | null;
+}
+
 export interface CreatedPerson extends Person {
 	/** Shown once, in the response to the create call — never retrievable afterwards. */
 	initialPassword: string;
@@ -37,23 +46,10 @@ export const peopleApi = createApi({
 			query: (id) => ({ url: `people/${id}`, method: "DELETE" }),
 			invalidatesTags: ["People"],
 		}),
-		setPartner: builder.mutation<void, { personId: number; partnerId: number | null }>({
-			query: ({ personId, partnerId }) => ({
-				url: `people/${personId}/partner`,
-				method: "PUT",
-				body: { partnerId },
-			}),
-			invalidatesTags: ["People"],
-		}),
-		setLastYearRecipient: builder.mutation<
-			void,
-			{ personId: number; lastYearRecipientId: number | null }
-		>({
-			query: ({ personId, lastYearRecipientId }) => ({
-				url: `people/${personId}/last-year`,
-				method: "PUT",
-				body: { lastYearRecipientId },
-			}),
+		// One request for the whole edit form — the server applies the lot in
+		// a single transaction, so a bad partner can't half-apply a rename.
+		updatePerson: builder.mutation<Person, { id: number } & PersonUpdate>({
+			query: ({ id, ...body }) => ({ url: `people/${id}`, method: "PATCH", body }),
 			invalidatesTags: ["People"],
 		}),
 	}),
@@ -63,6 +59,5 @@ export const {
 	useGetPeopleQuery,
 	useAddPersonMutation,
 	useRemovePersonMutation,
-	useSetPartnerMutation,
-	useSetLastYearRecipientMutation,
+	useUpdatePersonMutation,
 } = peopleApi;

@@ -2,7 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import type { Db } from "../db/client.js";
 import { Hono } from "hono";
-import { listPeople } from "../people/people.js";
+import { listPeople, updatePerson } from "../people/people.js";
 import { requireAuth } from "./middleware.js";
 import type { AuthVariables } from "./types.js";
 import { login, getMustChangePassword, changePassword } from "./service.js";
@@ -13,6 +13,16 @@ const loginSchema = z.object({
 	email: z.email(),
 	password: z.string().min(1),
 });
+
+const updateMeSchema = z.object({
+	name: z.string().min(1).optional(),
+	email: z.email().optional(),
+	phone: z.int().min(10000000).max(99999999).optional(),
+});
+
+/** A better-sqlite3 error raised by a UNIQUE constraint (here: a duplicate email). */
+const isUniqueConstraintError = (err: unknown): boolean =>
+	err instanceof Error && "code" in err && err.code === "SQLITE_CONSTRAINT_UNIQUE";
 
 const changePasswordSchema = z.object({
 	/** Omitted only by someone setting their first password from a magic-link session. */
@@ -79,6 +89,27 @@ export const getRoutes = (db: Db, authSecret: string, appBaseUrl = "") =>
 				// all, rather than showing a field this person can't fill in.
 				requiresCurrentPassword: !maySkipCurrentPassword(db, personId, c.get("viaMagicLink")),
 			});
+		})
+		// Editing yourself, as opposed to /api/people/:id which is an admin
+		// editing anyone. Deliberately narrower than that one: partner and
+		// last year's recipient are inputs to the draw, not personal details,
+		// so they stay with whoever runs it.
+		.patch("/me", requireAuth(authSecret), zValidator("json", updateMeSchema), (c) => {
+			try {
+				const result = updatePerson(db, c.get("personId"), c.req.valid("json"));
+				if (!result.ok) {
+					// The only reachable case: the person behind this session was
+					// deleted while it was still valid.
+					clearSession(c);
+					return c.json({ error: "Not authenticated" }, 401);
+				}
+				return c.json(result.person);
+			} catch (err) {
+				if (isUniqueConstraintError(err)) {
+					return c.json({ error: "Email already in use" }, 409);
+				}
+				throw err;
+			}
 		})
 		.post(
 			"/change-password",

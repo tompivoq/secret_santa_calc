@@ -1,6 +1,6 @@
 import { eq, inArray } from "drizzle-orm";
 import type { Db, Tx } from "../db/client.js";
-import { people, type PersonRow } from "../db/schema.js";
+import { people, type NewPersonRow, type PersonRow } from "../db/schema.js";
 import { createInitialCredentials } from "../auth/service.js";
 
 export const listPeople = (db: Db) => db.select().from(people).all();
@@ -65,6 +65,73 @@ export const removePerson = (db: Db, personId: number) =>
 			.where(eq(people.lastYearRecipientId, personId))
 			.run();
 		tx.delete(people).where(eq(people.id, personId)).run();
+	});
+
+export interface PersonUpdate {
+	name?: string | undefined;
+	email?: string | undefined;
+	phone?: number | undefined;
+	partnerId?: number | null | undefined;
+	lastYearRecipientId?: number | null | undefined;
+}
+
+export type UpdateResult =
+	| { ok: true; person: PersonRow }
+	| { ok: false; reason: "not-found" | "invalid-partner" | "invalid-last-year" };
+
+/**
+ * Applies any subset of a person's editable fields in one transaction.
+ *
+ * Everything is validated before anything is written, so a bad partner id
+ * can't leave a half-applied edit behind — the name change and the partner
+ * change in one form submission either both happen or neither does.
+ *
+ * A duplicate email is left to surface as the underlying unique-constraint
+ * error, which the route turns into a 409 exactly as it does on create.
+ */
+export const updatePerson = (db: Db, personId: number, input: PersonUpdate): UpdateResult =>
+	db.transaction((tx) => {
+		const existing = tx.select().from(people).where(eq(people.id, personId)).get();
+		if (!existing) {
+			return { ok: false, reason: "not-found" } as const;
+		}
+
+		if (input.partnerId !== undefined && input.partnerId !== null) {
+			const partner = tx.select().from(people).where(eq(people.id, input.partnerId)).get();
+			if (!partner || input.partnerId === personId) {
+				return { ok: false, reason: "invalid-partner" } as const;
+			}
+		}
+
+		if (input.lastYearRecipientId !== undefined && input.lastYearRecipientId !== null) {
+			const recipient = tx
+				.select()
+				.from(people)
+				.where(eq(people.id, input.lastYearRecipientId))
+				.get();
+			if (!recipient || input.lastYearRecipientId === personId) {
+				return { ok: false, reason: "invalid-last-year" } as const;
+			}
+		}
+
+		const fields: Partial<NewPersonRow> = {};
+		if (input.name !== undefined) fields.name = input.name;
+		if (input.email !== undefined) fields.email = input.email;
+		if (input.phone !== undefined) fields.phone = input.phone;
+		if (input.lastYearRecipientId !== undefined) {
+			fields.lastYearRecipientId = input.lastYearRecipientId;
+		}
+		if (Object.keys(fields).length > 0) {
+			tx.update(people).set(fields).where(eq(people.id, personId)).run();
+		}
+
+		// Last, and through the same path as everywhere else, so the
+		// unlink-the-previous-partner semantics stay in exactly one place.
+		if (input.partnerId !== undefined) {
+			linkPartner(tx, personId, input.partnerId);
+		}
+
+		return { ok: true, person: tx.select().from(people).where(eq(people.id, personId)).get()! };
 	});
 
 /**

@@ -1,127 +1,10 @@
 import { useMemo, useState } from "react";
 import type { Person } from "../models/person";
-import {
-	useGetPeopleQuery,
-	useRemovePersonMutation,
-	useSetLastYearRecipientMutation,
-	useSetPartnerMutation,
-} from "../store/peopleApi";
-import { findPartner } from "../utils/person_utils";
+import { useGetPeopleQuery, useRemovePersonMutation } from "../store/peopleApi";
+import EditPersonForm from "./EditPersonForm";
+import { Modal } from "./shared/Modal";
 import { reject } from "lodash-es";
-import { Button } from "./shared/Button";
-import { FaRegTrashCan } from "react-icons/fa6";
-
-interface PersonSelectProps {
-	id: string;
-	label: string;
-	value: number | null | undefined;
-	options: Person[];
-	onChange: (personId: number | null) => void;
-}
-
-/** A "pick one of the other people, or nobody" dropdown — partner, last year's match. */
-const PersonSelect = ({ id, label, value, options, onChange }: PersonSelectProps) => (
-	<div className="flex flex-col sm:flex-row sm:items-center">
-		<label htmlFor={id} className="min-w-fit text-sm font-semibold">
-			{label}
-		</label>
-		<select
-			id={id}
-			value={value ?? ""}
-			onChange={(event) => onChange(event.target.value === "" ? null : Number(event.target.value))}
-			className="border-border-blue-spruce-400 sm:mx-2 w-32 rounded-md border px-2.5 py-2 text-sm"
-		>
-			<option value="">None</option>
-			{options.map((p) => (
-				<option key={p.id} value={p.id}>
-					{p.name}
-				</option>
-			))}
-		</select>
-	</div>
-);
-
-interface ListPersonProps {
-	person: Person;
-	others: Person[];
-	selected: boolean;
-	onToggleSelected: () => void;
-	onSetPartner: (personId: number, partnerId: number | null) => void;
-	onSetLastYear: (personId: number, lastYearRecipientId: number | null) => void;
-	onDelete: () => void;
-}
-
-const ListPerson = ({
-	person,
-	others,
-	selected,
-	onToggleSelected,
-	onSetPartner,
-	onSetLastYear,
-	onDelete,
-}: ListPersonProps) => {
-	const [pendingDelete, setPendingDelete] = useState(false);
-	const partner = findPartner(others, person);
-	return (
-		<li
-			key={person.id}
-			className="border-blue-spruce-400 flex flex-row gap-3 rounded-xl border p-4 sm:items-center sm:justify-between">
-			<div className="flex grow flex-col gap-2">
-				<div className="flex flex-col sm:flex-row items-baseline">
-					<div className="flex flex-row grow items-center">
-						<input
-							type="checkbox"
-							aria-label={`Include ${person.name} in the next match`}
-							title={`Include ${person.name} in the next match`}
-							checked={selected}
-							onChange={onToggleSelected}
-							className="mr-3 size-4"
-						/>
-						<p className="text-lg font-medium">{person.name}</p>
-					</div>
-					<p className="flex flex-row gap-2 text-base pl-3 sm:pl-0">
-						<span>{person.email}</span>
-						<span>{person.phone}</span>
-					</p>
-				</div>
-				<div className="flex w-full flex-wrap sm:flex-row items-center sm:justify-center gap-2">
-					<PersonSelect
-						id={`partner-${person.id}`}
-						label="Partner"
-						value={partner?.id}
-						options={others}
-						onChange={(partnerId) => onSetPartner(person.id, partnerId)}
-					/>
-					<PersonSelect
-						id={`last-year-${person.id}`}
-						label="Last year"
-						value={person.lastYearRecipientId}
-						options={others}
-						onChange={(recipientId) => onSetLastYear(person.id, recipientId)}
-					/>
-				</div>
-				<div className="flex flex-row justify-end">
-					{pendingDelete === true ? (
-						<div className="flex items-center gap-2">
-							<span className="text-sm">Delete {person.name}?</span>
-							<Button behaviour="destructive" onClick={onDelete}>
-								Confirm
-							</Button>
-							<Button behaviour="neutral" onClick={() => setPendingDelete(false)}>
-								Cancel
-							</Button>
-						</div>
-					) : (
-						<Button behaviour="destructive" onClick={() => setPendingDelete(true)}>
-							<FaRegTrashCan className="size-3" />
-							<span>Delete</span>
-						</Button>
-					)}
-				</div>
-			</div>
-		</li>
-	);
-};
+import { ListPerson } from "./ListPerson";
 
 const NO_PEOPLE: Person[] = [];
 
@@ -133,17 +16,26 @@ interface PersonListProps {
 	onSelectNone: () => void;
 }
 
-function PersonList({ selectedIds, onToggleSelected, onSelectAll, onSelectNone }: PersonListProps) {
+export const PersonList = ({
+	selectedIds,
+	onToggleSelected,
+	onSelectAll,
+	onSelectNone,
+}: PersonListProps) => {
 	const { data } = useGetPeopleQuery();
 	const people = data ?? NO_PEOPLE;
 	const [removePerson] = useRemovePersonMutation();
-	const [setPartner] = useSetPartnerMutation();
-	const [setLastYearRecipient] = useSetLastYearRecipientMutation();
+	// Which person's edit dialog is open, by id rather than by value — so it
+	// keeps showing the freshly-saved person rather than a stale copy taken
+	// when the dialog was opened.
+	const [editingId, setEditingId] = useState<number | null>(null);
 
 	const othersById = useMemo(
 		() => new Map(people.map((person) => [person.id, reject(people, { id: person.id })])),
 		[people],
 	);
+
+	const editing = people.find((person) => person.id === editingId);
 
 	if (people.length === 0) {
 		return null;
@@ -173,16 +65,21 @@ function PersonList({ selectedIds, onToggleSelected, onSelectAll, onSelectNone }
 						others={othersById.get(person.id) ?? []}
 						selected={selectedIds.has(person.id)}
 						onToggleSelected={() => onToggleSelected(person.id)}
+						onEdit={() => setEditingId(person.id)}
 						onDelete={() => removePerson(person.id)}
-						onSetPartner={(personId, partnerId) => setPartner({ personId, partnerId })}
-						onSetLastYear={(personId, lastYearRecipientId) =>
-							setLastYearRecipient({ personId, lastYearRecipientId })
-						}
 					/>
 				))}
 			</ul>
+
+			{editing && (
+				<Modal open onClose={() => setEditingId(null)} title={`Edit ${editing.name}`}>
+					<EditPersonForm
+						person={editing}
+						others={othersById.get(editing.id) ?? []}
+						onDone={() => setEditingId(null)}
+					/>
+				</Modal>
+			)}
 		</div>
 	);
-}
-
-export default PersonList;
+};

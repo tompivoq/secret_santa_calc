@@ -5,7 +5,8 @@ import { createApp } from "./app.js";
 import { createDb, type Db } from "./db/client.js";
 import { migrationsFolder } from "./db/migrate.js";
 import { people } from "./db/schema.js";
-import { addPerson, type CreatedPerson } from "./people/people.js";
+import { addPerson, listPeople, type CreatedPerson } from "./people/people.js";
+import { login } from "./auth/service.js";
 
 let db: Db;
 let app: ReturnType<typeof createApp>;
@@ -170,19 +171,10 @@ describe("/api/people authorization", () => {
 		expect((await app.request("/api/people/1", { method: "DELETE" })).status).toBe(401);
 		expect(
 			(
-				await app.request("/api/people/1/partner", {
-					method: "PUT",
+				await app.request("/api/people/1", {
+					method: "PATCH",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ partnerId: null }),
-				})
-			).status,
-		).toBe(401);
-		expect(
-			(
-				await app.request("/api/people/1/last-year", {
-					method: "PUT",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ lastYearRecipientId: null }),
+					body: JSON.stringify({ name: "Renamed" }),
 				})
 			).status,
 		).toBe(401);
@@ -208,19 +200,12 @@ describe("/api/people authorization", () => {
 		).toBe(403);
 		expect(
 			(
-				await app.request(`/api/people/${anna.id}/partner`, {
-					method: "PUT",
+				await app.request(`/api/people/${anna.id}`, {
+					method: "PATCH",
 					headers: { "Content-Type": "application/json", cookie },
-					body: JSON.stringify({ partnerId: null }),
-				})
-			).status,
-		).toBe(403);
-		expect(
-			(
-				await app.request(`/api/people/${anna.id}/last-year`, {
-					method: "PUT",
-					headers: { "Content-Type": "application/json", cookie },
-					body: JSON.stringify({ lastYearRecipientId: null }),
+					// Not even themselves: editing through the people API is an
+					// admin action. Their own details go through /api/auth/me.
+					body: JSON.stringify({ name: "Renamed" }),
 				})
 			).status,
 		).toBe(403);
@@ -250,23 +235,23 @@ describe("/api/people authorization", () => {
 
 		expect(
 			(
-				await app.request(`/api/people/${created.id}/partner`, {
-					method: "PUT",
+				await app.request(`/api/people/${created.id}`, {
+					method: "PATCH",
 					headers: { "Content-Type": "application/json", cookie },
-					body: JSON.stringify({ partnerId: admin.id }),
+					body: JSON.stringify({ partnerId: admin.id, lastYearRecipientId: admin.id }),
 				})
 			).status,
-		).toBe(204);
+		).toBe(200);
 
 		expect(
 			(
-				await app.request(`/api/people/${created.id}/last-year`, {
-					method: "PUT",
+				await app.request(`/api/people/${created.id}`, {
+					method: "PATCH",
 					headers: { "Content-Type": "application/json", cookie },
-					body: JSON.stringify({ lastYearRecipientId: admin.id }),
+					body: JSON.stringify({ name: "Someone Else" }),
 				})
 			).status,
-		).toBe(204);
+		).toBe(200);
 
 		expect(
 			(await app.request(`/api/people/${created.id}`, { method: "DELETE", headers: { cookie } }))
@@ -312,5 +297,123 @@ describe("CORS", () => {
 		const res = await app.request("/api/people", { headers: { origin: "https://evil.example" } });
 		expect(res.headers.get("access-control-allow-origin")).toBeNull();
 		expect(res.headers.get("access-control-allow-credentials")).toBeNull();
+	});
+});
+
+describe("PATCH /api/people/:id", () => {
+	const asAdmin = async () => {
+		const admin = seed("Admin");
+		makeAdmin(admin.id);
+		return loginAs("admin@example.com", admin.initialPassword);
+	};
+
+	const patch = (id: number, cookie: string, body: Record<string, unknown>) =>
+		app.request(`/api/people/${id}`, {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json", cookie },
+			body: JSON.stringify(body),
+		});
+
+	it("returns the person as they now are", async () => {
+		const cookie = await asAdmin();
+		const anna = seed("Anna");
+
+		const res = await patch(anna.id, cookie, { name: "Anna Marie", phone: 99887766 });
+
+		expect(res.status).toBe(200);
+		expect(await res.json()).toMatchObject({
+			id: anna.id,
+			name: "Anna Marie",
+			phone: 99887766,
+			email: "anna@example.com",
+		});
+	});
+
+	it("rejects an email that belongs to someone else with 409", async () => {
+		const cookie = await asAdmin();
+		seed("Carl");
+		const anna = seed("Anna");
+
+		const res = await patch(anna.id, cookie, { email: "carl@example.com" });
+
+		expect(res.status).toBe(409);
+	});
+
+	it("404s for a person who doesn't exist", async () => {
+		const cookie = await asAdmin();
+		expect((await patch(999_999, cookie, { name: "Nobody" })).status).toBe(404);
+	});
+
+	it("400s on a partner who doesn't exist", async () => {
+		const cookie = await asAdmin();
+		const anna = seed("Anna");
+		expect((await patch(anna.id, cookie, { partnerId: 999_999 })).status).toBe(400);
+	});
+
+	it("rejects an invalid phone number", async () => {
+		const cookie = await asAdmin();
+		const anna = seed("Anna");
+		expect((await patch(anna.id, cookie, { phone: 1 })).status).toBe(400);
+	});
+});
+
+describe("PATCH /api/auth/me", () => {
+	const patchMe = (cookie: string, body: Record<string, unknown>) =>
+		app.request("/api/auth/me", {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json", cookie },
+			body: JSON.stringify(body),
+		});
+
+	it("lets a non-admin change their own details", async () => {
+		const anna = seed("Anna");
+		const cookie = await loginAs("anna@example.com", anna.initialPassword);
+
+		const res = await patchMe(cookie, { name: "Anna Marie", phone: 99887766 });
+
+		expect(res.status).toBe(200);
+		expect(await res.json()).toMatchObject({ id: anna.id, name: "Anna Marie", phone: 99887766 });
+	});
+
+	it("requires a session", async () => {
+		const res = await app.request("/api/auth/me", {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ name: "Nobody" }),
+		});
+		expect(res.status).toBe(401);
+	});
+
+	it("won't let someone set their own partner or last year's match", async () => {
+		const anna = seed("Anna");
+		const bjorn = seed("Bjørn");
+		const cookie = await loginAs("anna@example.com", anna.initialPassword);
+
+		// Those are inputs to the draw, not personal details — the schema
+		// ignores them rather than quietly letting someone rig their own.
+		await patchMe(cookie, { partnerId: bjorn.id, lastYearRecipientId: bjorn.id });
+
+		const updated = listPeople(db).find((p) => p.id === anna.id)!;
+		expect(updated.partnerId).toBeNull();
+		expect(updated.lastYearRecipientId).toBeNull();
+	});
+
+	it("can't take an email that belongs to someone else", async () => {
+		seed("Carl");
+		const anna = seed("Anna");
+		const cookie = await loginAs("anna@example.com", anna.initialPassword);
+
+		expect((await patchMe(cookie, { email: "carl@example.com" })).status).toBe(409);
+	});
+
+	it("changes the email login actually uses", async () => {
+		const anna = seed("Anna");
+		const cookie = await loginAs("anna@example.com", anna.initialPassword);
+
+		await patchMe(cookie, { email: "anna.marie@example.com" });
+
+		// Email is the login identifier, so moving it moves how they sign in.
+		expect(login(db, "anna.marie@example.com", anna.initialPassword)).not.toBeNull();
+		expect(login(db, "anna@example.com", anna.initialPassword)).toBeNull();
 	});
 });

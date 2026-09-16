@@ -15,6 +15,8 @@ export default defineConfig({
 	// (or its build output/node_modules).
 	test: {
 		exclude: ["**/node_modules/**", "**/dist/**", "server/**"],
+		// Shims the bits of <dialog> jsdom hasn't implemented — see the file.
+		setupFiles: ["./src/test-setup.ts"],
 	},
 	//Oxlint configuration
 	lint: {

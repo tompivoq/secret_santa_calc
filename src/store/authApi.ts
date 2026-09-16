@@ -48,6 +48,13 @@ export const authApi = createApi({
 			query: (body) => ({ url: "login", method: "POST", body }),
 			invalidatesTags: ["Session"],
 		}),
+		// Editing yourself. Narrower than the admin's PATCH /api/people/:id by
+		// design: partner and last year's recipient are inputs to the draw, so
+		// they stay with whoever runs it — the server enforces that too.
+		updateMe: builder.mutation<Person, { name?: string; email?: string; phone?: number }>({
+			query: (body) => ({ url: "me", method: "PATCH", body }),
+			invalidatesTags: ["Session"],
+		}),
 		logout: builder.mutation<void, void>({
 			query: () => ({ url: "logout", method: "POST" }),
 			invalidatesTags: ["Session"],
@@ -59,5 +66,10 @@ export const authApi = createApi({
 	}),
 });
 
-export const { useMeQuery, useLoginMutation, useLogoutMutation, useChangePasswordMutation } =
-	authApi;
+export const {
+	useMeQuery,
+	useLoginMutation,
+	useLogoutMutation,
+	useChangePasswordMutation,
+	useUpdateMeMutation,
+} = authApi;
