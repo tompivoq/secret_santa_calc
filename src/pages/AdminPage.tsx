@@ -36,7 +36,7 @@ function AdminPage() {
 		<>
 			<p>Enter a list of people and randomly assign each one a secret santa.</p>
 
-			<div className="flex h-fit flex-col rounded-xl border border-gray-400 p-5 transition-[height] duration-300 ease-in-out">
+			<div className="flex h-fit flex-col rounded-xl border border-gray-400 p-5">
 				<div
 					className="flex cursor-pointer flex-row items-center"
 					onClick={() => setFormOpen((prev) => !prev)}

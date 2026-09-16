@@ -23,7 +23,8 @@ const NO_PEOPLE: Person[] = [];
 
 interface JustCreated {
 	name: string;
-	initialPassword: string;
+	email: string;
+	phone: string;
 }
 
 function PersonForm() {
@@ -48,7 +49,7 @@ function PersonForm() {
 				phone: data.phone,
 				partnerId: data.partnerId,
 			}).unwrap();
-			setJustCreated({ name: created.name, initialPassword: created.initialPassword });
+			setJustCreated({ name: created.name, email: created.email, phone: created.phone.toString() });
 			reset();
 		} catch {
 			setError("email", { message: "That email is already registered to someone else" });
@@ -58,23 +59,19 @@ function PersonForm() {
 	return (
 		<div className="mt-8 flex flex-col gap-4">
 			{justCreated && (
-				<div className="rounded-xl border border-green-600 bg-green-50 p-4 text-left text-sm dark:bg-green-950">
-					<p>
-						<span className="font-semibold">{justCreated.name}</span> was added. Their initial
-						password is:
-					</p>
-					<p className="mt-1 font-mono text-base">{justCreated.initialPassword}</p>
-					<p className="mt-1 text-gray-600 dark:text-gray-400">
-						Share this with them — it won't be shown again. They'll be asked to set their own
-						password the first time they log in.
-					</p>
-					<button
-						type="button"
+				<div className="w-fit self-center rounded-xl border border-ink-black-950 bg-blue-spruce-800 p-6 text-left text-sm">
+					<div className="flex flex-col gap-1">
+						<div className="flex flex-row gap-2"><span className="font-semibold">{justCreated.name}</span> was added</div>
+						<div className="flex flex-row gap-2"><span className="font-semibold w-16">E-mail:</span>{justCreated.email}</div>
+						<div className="flex flex-row gap-2"><span className="font-semibold w-16">Phone:</span>{justCreated.phone}</div>
+					</div>
+					<Button
+						behaviour="neutral"
+						className="mt-2 mx-auto"
 						onClick={() => setJustCreated(null)}
-						className="mt-2 cursor-pointer underline hover:no-underline"
 					>
 						Dismiss
-					</button>
+					</Button>
 				</div>
 			)}
 			<form
