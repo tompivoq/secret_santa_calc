@@ -21,7 +21,7 @@ interface PersonSelectProps {
 
 /** A "pick one of the other people, or nobody" dropdown — partner, last year's match. */
 const PersonSelect = ({ id, label, value, options, onChange }: PersonSelectProps) => (
-	<div className="flex flex-row items-center">
+	<div className="flex flex-col sm:flex-row sm:items-center">
 		<label htmlFor={id} className="min-w-fit text-sm font-semibold">
 			{label}
 		</label>
@@ -29,7 +29,7 @@ const PersonSelect = ({ id, label, value, options, onChange }: PersonSelectProps
 			id={id}
 			value={value ?? ""}
 			onChange={(event) => onChange(event.target.value === "" ? null : Number(event.target.value))}
-			className="border-border-blue-spruce-400 mx-2 w-32 rounded-md border px-2.5 py-2 text-sm"
+			className="border-border-blue-spruce-400 sm:mx-2 w-32 rounded-md border px-2.5 py-2 text-sm"
 		>
 			<option value="">None</option>
 			{options.map((p) => (
@@ -65,24 +65,26 @@ const ListPerson = ({
 	return (
 		<li
 			key={person.id}
-			className="border-blue-spruce-400 flex flex-row gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"
-		>
-			<div className="flex grow flex-col">
-				<div className="mb-2 flex flex-row items-baseline">
-					<input
-						type="checkbox"
-						aria-label={`Include ${person.name} in the next match`}
-						title={`Include ${person.name} in the next match`}
-						checked={selected}
-						onChange={onToggleSelected}
-						className="mr-3 size-4"
-					/>
-					<p className="grow text-lg font-medium">{person.name}</p>
-					<p className="text-base">
-						{person.email} | {person.phone}
+			className="border-blue-spruce-400 flex flex-row gap-3 rounded-xl border p-4 sm:items-center sm:justify-between">
+			<div className="flex grow flex-col gap-2">
+				<div className="flex flex-col sm:flex-row items-baseline">
+					<div className="flex flex-row grow items-center">
+						<input
+							type="checkbox"
+							aria-label={`Include ${person.name} in the next match`}
+							title={`Include ${person.name} in the next match`}
+							checked={selected}
+							onChange={onToggleSelected}
+							className="mr-3 size-4"
+						/>
+						<p className="text-lg font-medium">{person.name}</p>
+					</div>
+					<p className="flex flex-row gap-2 text-base pl-3 sm:pl-0">
+						<span>{person.email}</span>
+						<span>{person.phone}</span>
 					</p>
 				</div>
-				<div className="flex w-full flex-row items-center justify-center gap-2">
+				<div className="flex w-full flex-wrap sm:flex-row items-center sm:justify-center gap-2">
 					<PersonSelect
 						id={`partner-${person.id}`}
 						label="Partner"

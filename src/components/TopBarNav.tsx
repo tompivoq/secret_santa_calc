@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useLogoutMutation, useMeQuery } from "../store/authApi";
 import { Button } from "./shared/Button";
-import LogoFull from "./../../public/JulenissenLogoType.png?url";
-import Logo from "./../../public/JulenissenLogo.png?url";
+import LogoFull from "/JulenissenLogoType.png?url";
+import Logo from "/JulenissenLogo.png?url";
 
 export const TopBarNav = () => {
 	// Also queried (and cached) inside RequireAuth/AccountPage/ChangePasswordPage
