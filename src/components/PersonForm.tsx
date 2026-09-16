@@ -133,7 +133,8 @@ function PersonForm() {
 						</label>
 						<input
 							id="phone"
-							type="number"
+							type="tel"
+							pattern="[0-9]{8}"
 							placeholder="74551212"
 							{...register("phone", {
 								required: "A phone number is required",

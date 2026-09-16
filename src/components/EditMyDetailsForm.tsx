@@ -111,7 +111,8 @@ function EditMyDetailsForm({ person, onDone }: EditMyDetailsFormProps) {
 				</label>
 				<input
 					id="me-phone"
-					type="number"
+					type="tel"
+					pattern="[0-9]{8}"
 					{...register("phone", {
 						required: "A phone number is required",
 						valueAsNumber: true,

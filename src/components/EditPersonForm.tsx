@@ -115,7 +115,8 @@ function EditPersonForm({ person, others, onDone }: EditPersonFormProps) {
 				</label>
 				<input
 					id="edit-phone"
-					type="number"
+					type="tel"
+					pattern="[0-9]{8}"
 					{...register("phone", {
 						required: "A phone number is required",
 						valueAsNumber: true,
