@@ -172,39 +172,43 @@ const assignmentLineFor = (giver: string) =>
 		(_, el) => el?.tagName === "LI" && el.textContent?.startsWith(`${giver} → `) === true,
 	);
 
-/** Opts out of the default blind draw, for the tests that assert on pairings. */
-const revealPairings = (user: ReturnType<typeof userEvent.setup>) =>
-	user.click(screen.getByLabelText("Don't show me who drew whom"));
+/**
+ * Turns the default test-run into the real thing by unticking the box, for
+ * the tests about a draw nobody — the admin included — gets to see.
+ */
+const makeItTheRealDraw = (user: ReturnType<typeof userEvent.setup>) =>
+	user.click(screen.getByLabelText("Test-run (show matches when done)"));
 
 describe("running a match from the admin page", () => {
-	it("defaults to everyone selected, and draws without revealing the pairings", async () => {
-		stubApi([ANNA, BJORN, CARL]);
+	it("defaults to a test run, which shows the pairings", async () => {
+		const { drafted } = stubApi([ANNA, BJORN, CARL]);
 		const user = userEvent.setup();
 		renderAdminPage();
 
 		await screen.findByText("3 of 3 selected");
-		await user.click(screen.getByRole("button", { name: /Run match/ }));
-
-		// It drew, and says who took part...
-		await screen.findByText("3 people");
-		expect(screen.getByText(/Anna, Bjørn, Carl/)).not.toBeNull();
-		// ...but not a single pairing, since the admin takes part too.
-		expect(screen.queryByText(/ → /)).toBeNull();
-		expect(screen.getByText(/Who drew whom is hidden/)).not.toBeNull();
-	});
-
-	it("shows the pairings when the admin opts out of a blind draw", async () => {
-		stubApi([ANNA, BJORN, CARL]);
-		const user = userEvent.setup();
-		renderAdminPage();
-
-		await screen.findByText("3 of 3 selected");
-		await revealPairings(user);
 		await user.click(screen.getByRole("button", { name: /Run match/ }));
 
 		expect(await assignmentLineFor("Anna")).not.toBeNull();
 		expect(await assignmentLineFor("Bjørn")).not.toBeNull();
 		expect(await assignmentLineFor("Carl")).not.toBeNull();
+		expect(drafted[0]!.blind).toBe(false);
+	});
+
+	it("hides the pairings once the test-run box is unticked", async () => {
+		stubApi([ANNA, BJORN, CARL]);
+		const user = userEvent.setup();
+		renderAdminPage();
+
+		await screen.findByText("3 of 3 selected");
+		await makeItTheRealDraw(user);
+		await user.click(screen.getByRole("button", { name: /Run match/ }));
+
+		// Says who took part...
+		await screen.findByText("3 people");
+		expect(screen.getByText(/Anna, Bjørn, Carl/)).not.toBeNull();
+		// ...but not a single pairing, since the admin takes part too.
+		expect(screen.queryByText(/ → /)).toBeNull();
+		expect(screen.getByText(/Who drew whom is hidden/)).not.toBeNull();
 	});
 
 	it("asks the server to hide them, rather than just not rendering them", async () => {
@@ -213,6 +217,7 @@ describe("running a match from the admin page", () => {
 		renderAdminPage();
 
 		await screen.findByText("3 of 3 selected");
+		await makeItTheRealDraw(user);
 		await user.click(screen.getByRole("button", { name: /Run match/ }));
 		await screen.findByText("3 people");
 
@@ -230,7 +235,7 @@ describe("running a match from the admin page", () => {
 		await screen.findByText("2 of 3 selected");
 		await user.click(screen.getByRole("button", { name: /Run match/ }));
 
-		await screen.findByText("2 people");
+		await assignmentLineFor("Anna");
 		expect(drafted).toHaveLength(1);
 		expect([...drafted[0]!.personIds].sort()).toEqual([ANNA.id, BJORN.id].sort());
 	});
@@ -272,7 +277,7 @@ describe("locking a draft in", () => {
 
 		await screen.findByText("3 of 3 selected");
 		await user.click(screen.getByRole("button", { name: /Run match/ }));
-		await screen.findByText("3 people");
+		await assignmentLineFor("Anna");
 
 		// While it's a draft: re-rollable, and explicitly not final.
 		expect(screen.getByText(/Nothing is final until you lock it in/)).not.toBeNull();
@@ -294,7 +299,7 @@ describe("locking a draft in", () => {
 
 		await screen.findByText("3 of 3 selected");
 		await user.click(screen.getByRole("button", { name: /Run match/ }));
-		await screen.findByText("3 people");
+		await assignmentLineFor("Anna");
 		await user.click(screen.getByRole("button", { name: "Lock in this match" }));
 		await screen.findByText(/Locked in on/);
 
@@ -313,7 +318,7 @@ describe("emailing people their link", () => {
 	const drawAndLock = async (user: ReturnType<typeof userEvent.setup>) => {
 		await screen.findByText("3 of 3 selected");
 		await user.click(screen.getByRole("button", { name: /Run match/ }));
-		await screen.findByText("3 people");
+		await assignmentLineFor("Anna");
 		await user.click(screen.getByRole("button", { name: "Lock in this match" }));
 		await screen.findByText(/Locked in on/);
 	};
@@ -325,7 +330,7 @@ describe("emailing people their link", () => {
 
 		await screen.findByText("3 of 3 selected");
 		await user.click(screen.getByRole("button", { name: /Run match/ }));
-		await screen.findByText("3 people");
+		await assignmentLineFor("Anna");
 
 		// Still a draft: it can still be re-rolled, so nobody may be told yet.
 		expect(screen.queryByRole("button", { name: /Email the/ })).toBeNull();
@@ -382,6 +387,8 @@ describe("a draw that's already been run", () => {
 		const { unmount } = renderAdminPage();
 
 		await screen.findByText("3 of 3 selected");
+		// The real draw, so there's something hidden to still be hidden after.
+		await makeItTheRealDraw(user);
 		await user.click(screen.getByRole("button", { name: /Run match/ }));
 		await screen.findByText("3 people");
 		await user.click(screen.getByRole("button", { name: "Lock in this match" }));

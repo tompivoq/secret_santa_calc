@@ -2,8 +2,13 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useLogoutMutation, useMeQuery } from "../store/authApi";
 import { Button } from "./shared/Button";
-import LogoFull from "/JulenissenLogoType.png?url";
-import Logo from "/JulenissenLogo.png?url";
+
+// Referenced by URL rather than imported: these live in public/, which Vite
+// copies verbatim and serves from the root. Importing out of public/ isn't
+// supported — it happens to build, but the test environment resolves
+// modules through Vite's transform pipeline, which refuses to serve them.
+const LOGO_WIDE = "/JulenissenLogoType.png";
+const LOGO_COMPACT = "/JulenissenLogo.png";
 
 export const TopBarNav = () => {
 	// Also queried (and cached) inside RequireAuth/AccountPage/ChangePasswordPage
@@ -24,13 +29,13 @@ export const TopBarNav = () => {
 		<div className="bg-oxblood-900 flex w-full flex-col pt-2">
 			<div className="mx-auto flex h-32 w-full max-w-4xl flex-row items-center-safe justify-between px-8 md:px-0">
 				<img
-					src={LogoFull}
+					src={LOGO_WIDE}
 					className="hidden h-3/5 justify-self-start md:flex"
 					alt="Julenissen"
 					title="Julenissen"
 				/>
 				<img
-					src={Logo}
+					src={LOGO_COMPACT}
 					className="h-3/5 justify-self-start md:hidden"
 					alt="Julenissen"
 					title="Julenissen"

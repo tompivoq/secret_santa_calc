@@ -147,9 +147,10 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 		useDraftMutation();
 	const [lockDraw, { error: lockError, isLoading: isLocking }] = useLockDrawMutation();
 	const [confirmingStartOver, setConfirmingStartOver] = useState(false);
-	// Defaults to hiding, since the admin is normally taking part themselves
-	// — showing it is the deliberate choice, for testing a group out.
-	const [blind, setBlind] = useState(true);
+	// Defaults to a test run, which shows the pairings — the common case is
+	// trying a group out. Unticking it is what makes a draw the real one,
+	// hidden from the admin as well so their own match stays a surprise.
+	const [testRun, setTestRun] = useState(true);
 
 	const nameById = new Map((people ?? []).map((person) => [person.id, person.name]));
 	const selectedCount = selectedIds.size;
@@ -157,7 +158,7 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 
 	const runDraft = (startOver?: boolean) => {
 		setConfirmingStartOver(false);
-		void draft({ personIds: [...selectedIds], blind, ...(startOver && { startOver }) });
+		void draft({ personIds: [...selectedIds], blind: !testRun, ...(startOver && { startOver }) });
 	};
 
 	// Only meaningful for a draft: a locked draw is history, so the fact that
@@ -189,16 +190,16 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 					<label className="flex items-center gap-2 text-sm">
 						<input
 							type="checkbox"
-							checked={blind}
-							onChange={(event) => setBlind(event.target.checked)}
+							checked={testRun}
+							onChange={(event) => setTestRun(event.target.checked)}
 							className="size-4 shrink-0"
 						/>
-						Don't show me who drew whom
+						Test-run (show matches when done)
 					</label>
 					<p className="text-sm text-gray-600 dark:text-gray-400">
-						{blind
-							? "Keep this ticked for the real draw — it's the only way your own match stays a surprise."
-							: "You'll see everyone's match, including your own. Useful for testing a group out."}
+						{testRun
+							? "You'll see everyone's match, including your own. Untick it for the real draw."
+							: "The real draw — nobody sees who drew whom, you included, so your own match stays a surprise."}
 					</p>
 
 					<div>
