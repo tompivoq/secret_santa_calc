@@ -19,9 +19,15 @@ const inputClasses = (hasError: boolean) =>
 interface ChangePasswordFormProps {
 	/** Called after the password is changed and the "me" cache (see below) has been updated. */
 	onSuccess?: () => void;
+	/**
+	 * Why they're being asked. Defaults to the forced first-login wording;
+	 * someone changing their password by choice needs to be told something
+	 * else entirely.
+	 */
+	intro?: string;
 }
 
-function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps = {}) {
+function ChangePasswordForm({ onSuccess, intro }: ChangePasswordFormProps = {}) {
 	const dispatch = useDispatch<AppDispatch>();
 	const { data: me } = useMeQuery();
 	const [changePassword, { isLoading }] = useChangePasswordMutation();
@@ -62,14 +68,14 @@ function ChangePasswordForm({ onSuccess }: ChangePasswordFormProps = {}) {
 	};
 
 	return (
-		<form
-			className="flex flex-col items-stretch gap-4 rounded-xl border border-gray-400 p-5 text-left"
-			onSubmit={handleSubmit(onSubmit)}
-		>
+		// No card chrome of its own — the caller supplies it, which is what
+		// lets this sit inside a modal without a border inside a border.
+		<form className="flex flex-col items-stretch gap-4 text-left" onSubmit={handleSubmit(onSubmit)}>
 			<p className="text-sm">
-				{requiresCurrent
-					? "This is your first time logging in — please set a new password."
-					: "Pick a password, so you can also log in without a link next time."}
+				{intro ??
+					(requiresCurrent
+						? "This is your first time logging in — please set a new password."
+						: "Pick a password, so you can also log in without a link next time.")}
 			</p>
 
 			{requiresCurrent && (

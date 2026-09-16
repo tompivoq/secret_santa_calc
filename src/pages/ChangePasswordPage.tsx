@@ -26,7 +26,7 @@ function ChangePasswordPage() {
 	}
 
 	return (
-		<div className="mt-8">
+		<div className="mt-8 rounded-xl border border-gray-400 p-5">
 			<ChangePasswordForm onSuccess={() => navigate("/account")} />
 		</div>
 	);
