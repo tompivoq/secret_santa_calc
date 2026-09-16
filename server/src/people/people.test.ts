@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { addPerson, listPeople, removePerson, setLastYearRecipient, setPartner } from "./people.js";
+import {
+	addPerson,
+	listPeople,
+	removePerson,
+	setLastYearRecipient,
+	setPartner,
+	updatePerson,
+} from "./people.js";
 import { createDb, type Db } from "../db/client.js";
 import { migrationsFolder } from "../db/migrate.js";
 
@@ -193,5 +200,90 @@ describe("setLastYearRecipient", () => {
 
 		// Rather than leaving Anna pointing at someone who no longer exists.
 		expect(listPeople(db).find((p) => p.id === anna.id)?.lastYearRecipientId).toBeNull();
+	});
+});
+
+describe("updatePerson", () => {
+	it("changes only the fields it is given", () => {
+		const anna = seed("Anna");
+
+		const result = updatePerson(db, anna.id, { name: "Anna Marie" });
+
+		expect(result.ok).toBe(true);
+		const updated = listPeople(db).find((p) => p.id === anna.id)!;
+		expect(updated.name).toBe("Anna Marie");
+		expect(updated.email).toBe("anna@example.com");
+		expect(updated.phone).toBe(22334455);
+	});
+
+	it("applies details, partner and last year's match in one go", () => {
+		const bjorn = seed("Bjørn");
+		const carl = seed("Carl");
+		const anna = seed("Anna");
+
+		updatePerson(db, anna.id, {
+			name: "Anna Marie",
+			phone: 99887766,
+			partnerId: bjorn.id,
+			lastYearRecipientId: carl.id,
+		});
+
+		const updated = listPeople(db).find((p) => p.id === anna.id)!;
+		expect(updated).toMatchObject({
+			name: "Anna Marie",
+			phone: 99887766,
+			partnerId: bjorn.id,
+			lastYearRecipientId: carl.id,
+		});
+		// Partner linking stays reciprocal, as it is everywhere else.
+		expect(listPeople(db).find((p) => p.id === bjorn.id)?.partnerId).toBe(anna.id);
+	});
+
+	it("clears a partner when given null", () => {
+		const bjorn = seed("Bjørn");
+		const anna = seed("Anna", bjorn.id);
+
+		updatePerson(db, anna.id, { partnerId: null });
+
+		expect(listPeople(db).find((p) => p.id === anna.id)?.partnerId).toBeNull();
+		expect(listPeople(db).find((p) => p.id === bjorn.id)?.partnerId).toBeNull();
+	});
+
+	it("reports an unknown person rather than creating one", () => {
+		expect(updatePerson(db, 999_999, { name: "Nobody" })).toEqual({
+			ok: false,
+			reason: "not-found",
+		});
+	});
+
+	it("rejects a partner who doesn't exist, without applying the rest", () => {
+		const anna = seed("Anna");
+
+		const result = updatePerson(db, anna.id, { name: "Anna Marie", partnerId: 999_999 });
+
+		expect(result).toEqual({ ok: false, reason: "invalid-partner" });
+		// The whole edit is refused, not half of it — the name is untouched.
+		expect(listPeople(db).find((p) => p.id === anna.id)?.name).toBe("Anna");
+	});
+
+	it("rejects making someone their own partner or their own last year's match", () => {
+		const anna = seed("Anna");
+
+		expect(updatePerson(db, anna.id, { partnerId: anna.id })).toEqual({
+			ok: false,
+			reason: "invalid-partner",
+		});
+		expect(updatePerson(db, anna.id, { lastYearRecipientId: anna.id })).toEqual({
+			ok: false,
+			reason: "invalid-last-year",
+		});
+	});
+
+	it("refuses an email that belongs to someone else", () => {
+		seed("Bjørn");
+		const anna = seed("Anna");
+
+		// Surfaced as the unique-constraint error the route turns into a 409.
+		expect(() => updatePerson(db, anna.id, { email: "bjørn@example.com" })).toThrow();
 	});
 });

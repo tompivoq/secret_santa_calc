@@ -2,7 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { requireAuth, requireAdmin } from "../auth/middleware.js";
 import { AuthVariables } from "../auth/types.js";
-import { listPeople, addPerson, removePerson, setPartner, setLastYearRecipient } from "./people.js";
+import { listPeople, addPerson, removePerson, updatePerson } from "./people.js";
 import { z } from "zod";
 import type { Db } from "../db/client.js";
 
@@ -13,13 +13,24 @@ const newPersonSchema = z.object({
 	partnerId: z.int().optional().nullable(),
 });
 
-const partnerSchema = z.object({
-	partnerId: z.number().int().nullable(),
+/**
+ * Every editable field, all optional — one endpoint for the whole edit
+ * form, so a change of name and of partner in the same submission either
+ * both land or neither does.
+ */
+const updatePersonSchema = z.object({
+	name: z.string().min(1).optional(),
+	email: z.email().optional(),
+	phone: z.int().min(10000000).max(99999999).optional(),
+	partnerId: z.int().nullable().optional(),
+	lastYearRecipientId: z.int().nullable().optional(),
 });
 
-const lastYearSchema = z.object({
-	lastYearRecipientId: z.number().int().nullable(),
-});
+const UPDATE_ERRORS = {
+	"not-found": "No such person",
+	"invalid-partner": "That partner doesn't exist, or is the person themselves",
+	"invalid-last-year": "That recipient doesn't exist, or is the person themselves",
+} as const;
 
 /** A better-sqlite3 error raised by a UNIQUE constraint (e.g. a duplicate email). */
 const isUniqueConstraintError = (err: unknown): boolean =>
@@ -51,25 +62,25 @@ export const getRoutes = (db: Db, authSecret: string) =>
 			removePerson(db, id);
 			return c.body(null, 204);
 		})
-		.put("/:id/partner", zValidator("json", partnerSchema), (c) => {
+		.patch("/:id", zValidator("json", updatePersonSchema), (c) => {
 			const id = Number(c.req.param("id"));
 			if (!Number.isInteger(id)) {
 				return c.json({ error: "Invalid id" }, 400);
 			}
-			const ok = setPartner(db, id, c.req.valid("json").partnerId);
-			if (!ok) {
-				return c.json({ error: "No such person, or invalid partner" }, 400);
+
+			try {
+				const result = updatePerson(db, id, c.req.valid("json"));
+				if (!result.ok) {
+					return c.json(
+						{ error: UPDATE_ERRORS[result.reason] },
+						result.reason === "not-found" ? 404 : 400,
+					);
+				}
+				return c.json(result.person);
+			} catch (err) {
+				if (isUniqueConstraintError(err)) {
+					return c.json({ error: "Email already in use" }, 409);
+				}
+				throw err;
 			}
-			return c.body(null, 204);
-		})
-		.put("/:id/last-year", zValidator("json", lastYearSchema), (c) => {
-			const id = Number(c.req.param("id"));
-			if (!Number.isInteger(id)) {
-				return c.json({ error: "Invalid id" }, 400);
-			}
-			const ok = setLastYearRecipient(db, id, c.req.valid("json").lastYearRecipientId);
-			if (!ok) {
-				return c.json({ error: "No such person, or invalid recipient" }, 400);
-			}
-			return c.body(null, 204);
 		});
