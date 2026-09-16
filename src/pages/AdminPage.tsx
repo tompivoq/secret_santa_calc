@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import PersonForm from "../components/PersonForm";
-import PersonList from "../components/PersonList";
 import MatchRunner from "../components/MatchRunner";
 import { useGetPeopleQuery } from "../store/peopleApi";
 import { FaChevronRight } from "react-icons/fa6";
+import { PersonList } from "../components/PersonList";
 
 function AdminPage() {
 	const [formOpen, setFormOpen] = useState(false);
