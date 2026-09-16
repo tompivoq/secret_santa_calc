@@ -76,18 +76,39 @@ const stubPeopleApi = () => {
 				});
 			}
 
-			const lastYearMatch = /^\/api\/people\/(\d+)\/last-year$/.exec(url.pathname);
-			if (lastYearMatch && request.method === "PUT") {
-				const { lastYearRecipientId } = (await request.json()) as {
-					lastYearRecipientId: number | null;
-				};
-				const person = people.find((p) => p.id === Number(lastYearMatch[1]));
-				if (person) {
-					// One-directional, as the real server is — nothing is set on
-					// the recipient.
-					person.lastYearRecipientId = lastYearRecipientId;
+			const patchMatch = /^\/api\/people\/(\d+)$/.exec(url.pathname);
+			if (patchMatch && request.method === "PATCH") {
+				const patch = (await request.json()) as Partial<Person>;
+				const person = people.find((p) => p.id === Number(patchMatch[1]));
+				if (!person) {
+					return new Response(JSON.stringify({ error: "No such person" }), { status: 404 });
 				}
-				return new Response(null, { status: 204 });
+
+				if (
+					patch.email !== undefined &&
+					people.some((p) => p.id !== person.id && p.email === patch.email)
+				) {
+					return new Response(JSON.stringify({ error: "Email already in use" }), { status: 409 });
+				}
+
+				const { partnerId, ...rest } = patch;
+				Object.assign(person, rest);
+				// Partner links are reciprocal on the real server, and last year's
+				// recipient deliberately isn't — the difference is worth keeping
+				// here, since a test could otherwise pass on the wrong one.
+				if (partnerId !== undefined) {
+					for (const other of people) {
+						if (other.partnerId === person.id) {
+							other.partnerId = undefined;
+						}
+					}
+					person.partnerId = partnerId ?? undefined;
+					const partner = people.find((p) => p.id === partnerId);
+					if (partner) {
+						partner.partnerId = person.id;
+					}
+				}
+				return new Response(JSON.stringify(person), { status: 200 });
 			}
 
 			return new Response(null, { status: 204 });
@@ -139,6 +160,23 @@ const addPerson = async (
 	await user.click(await screen.findByRole("button", { name: "Dismiss" }));
 };
 
+/**
+ * Opens the edit dialog for one person. Matched on the row's name element
+ * specifically: a row also mentions whoever it's partnered with, so looking
+ * for the name anywhere in the row would find the wrong one.
+ */
+const openEditDialogFor = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+	const rows = within(await screen.findByRole("list")).getAllByRole("listitem");
+	const row = rows.find((r) => r.querySelector("p.font-medium")?.textContent === name);
+	if (!row) {
+		throw new Error(`No row found for ${name}`);
+	}
+	await user.click(within(row).getByRole("button", { name: "Edit" }));
+	// Scoped to the dialog: the add-person form is open behind it and has
+	// its own Name/Email/Phone fields with the same labels.
+	return within(await screen.findByRole("dialog"));
+};
+
 describe("App: renders people and their partners as returned by the API", () => {
 	it("sends the chosen partner to the API and renders the link on both people", async () => {
 		const people = stubPeopleApi();
@@ -163,21 +201,16 @@ describe("App: renders people and their partners as returned by the API", () => 
 			{ id: 2, name: "Anna", email: "anna@example.com", phone: 22334455, partnerId: 1 },
 		]);
 
-		// ...and the list reflects that link on both rows.
+		// ...and the list shows it on both rows, as plain text now that
+		// changing it happens in the edit dialog instead.
+		const rows = within(await screen.findByRole("list")).getAllByRole("listitem");
 		await waitFor(() => {
-			const bjornPartnerSelect = screen.getByLabelText("Partner", {
-				selector: "#partner-1",
-			}) as HTMLSelectElement;
-			expect(bjornPartnerSelect.value).toBe("2");
+			expect(rows[0]!.textContent).toContain("Partner:Anna");
 		});
-
-		const annaPartnerSelect = screen.getByLabelText("Partner", {
-			selector: "#partner-2",
-		}) as HTMLSelectElement;
-		expect(annaPartnerSelect.value).toBe("1");
+		expect(rows[1]!.textContent).toContain("Partner:Bjørn");
 	});
 
-	it("records last year's match for one person, without touching the other", async () => {
+	it("records last year's match from the edit dialog, without touching the other person", async () => {
 		const people = stubPeopleApi();
 		const user = userEvent.setup();
 		renderApp();
@@ -185,10 +218,9 @@ describe("App: renders people and their partners as returned by the API", () => 
 		await addPerson(user, "Bjørn", "bjorn@example.com", "11223344");
 		await addPerson(user, "Anna", "anna@example.com", "22334455");
 
-		await user.selectOptions(
-			await screen.findByLabelText("Last year", { selector: "#last-year-2" }),
-			"Bjørn",
-		);
+		const dialog = await openEditDialogFor(user, "Anna");
+		await user.selectOptions(dialog.getByLabelText("Last year"), "Bjørn");
+		await user.click(dialog.getByRole("button", { name: "Save changes" }));
 
 		// Anna gave to Bjørn last year. Who gave to *her* is a separate fact,
 		// so unlike a partner link this sets nothing on Bjørn.
@@ -196,5 +228,43 @@ describe("App: renders people and their partners as returned by the API", () => 
 			expect(people.find((p) => p.name === "Anna")?.lastYearRecipientId).toBe(1);
 		});
 		expect(people.find((p) => p.name === "Bjørn")?.lastYearRecipientId).toBeUndefined();
+	});
+
+	it("edits a person's own details from the dialog", async () => {
+		const people = stubPeopleApi();
+		const user = userEvent.setup();
+		renderApp();
+
+		await addPerson(user, "Anna", "anna@example.com", "22334455");
+
+		const dialog = await openEditDialogFor(user, "Anna");
+		await user.clear(dialog.getByLabelText("Name"));
+		await user.type(dialog.getByLabelText("Name"), "Anna Marie");
+		await user.clear(dialog.getByLabelText("Phone"));
+		await user.type(dialog.getByLabelText("Phone"), "99887766");
+		await user.click(dialog.getByRole("button", { name: "Save changes" }));
+
+		await waitFor(() => {
+			expect(people[0]).toMatchObject({ name: "Anna Marie", phone: 99887766 });
+		});
+		// The dialog closes on success rather than leaving them wondering.
+		expect(screen.queryByRole("button", { name: "Save changes" })).toBeNull();
+	});
+
+	it("keeps the dialog open and explains when the email is taken", async () => {
+		stubPeopleApi();
+		const user = userEvent.setup();
+		renderApp();
+
+		await addPerson(user, "Bjørn", "bjorn@example.com", "11223344");
+		await addPerson(user, "Anna", "anna@example.com", "22334455");
+
+		const dialog = await openEditDialogFor(user, "Anna");
+		await user.clear(dialog.getByLabelText("Email"));
+		await user.type(dialog.getByLabelText("Email"), "bjorn@example.com");
+		await user.click(dialog.getByRole("button", { name: "Save changes" }));
+
+		await dialog.findByText("That email is already registered to someone else");
+		expect(dialog.getByRole("button", { name: "Save changes" })).not.toBeNull();
 	});
 });

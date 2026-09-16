@@ -59,17 +59,21 @@ function PersonForm() {
 	return (
 		<div className="mt-8 flex flex-col gap-4">
 			{justCreated && (
-				<div className="w-fit self-center rounded-xl border border-ink-black-950 bg-blue-spruce-800 p-6 text-left text-sm">
+				<div className="border-ink-black-950 bg-blue-spruce-800 w-fit self-center rounded-xl border p-6 text-left text-sm">
 					<div className="flex flex-col gap-1">
-						<div className="flex flex-row gap-2"><span className="font-semibold">{justCreated.name}</span> was added</div>
-						<div className="flex flex-row gap-2"><span className="font-semibold w-16">E-mail:</span>{justCreated.email}</div>
-						<div className="flex flex-row gap-2"><span className="font-semibold w-16">Phone:</span>{justCreated.phone}</div>
+						<div className="flex flex-row gap-2">
+							<span className="font-semibold">{justCreated.name}</span> was added
+						</div>
+						<div className="flex flex-row gap-2">
+							<span className="w-16 font-semibold">E-mail:</span>
+							{justCreated.email}
+						</div>
+						<div className="flex flex-row gap-2">
+							<span className="w-16 font-semibold">Phone:</span>
+							{justCreated.phone}
+						</div>
 					</div>
-					<Button
-						behaviour="neutral"
-						className="mt-2 mx-auto"
-						onClick={() => setJustCreated(null)}
-					>
+					<Button behaviour="neutral" className="mx-auto mt-2" onClick={() => setJustCreated(null)}>
 						Dismiss
 					</Button>
 				</div>
