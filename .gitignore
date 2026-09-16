@@ -15,6 +15,9 @@ dist-ssr
 # Claude Code local overrides
 .claude/settings.local.json
 
+# Local database snapshots from `npm run db:backup`
+backups
+
 # Secrets — the Resend API key and friends live in the environment, never
 # in the repo (see the env var table in README.md). Ignored so a stray
 # local .env can't be committed by accident.
