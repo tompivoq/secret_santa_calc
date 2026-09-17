@@ -42,8 +42,8 @@ export const ListPerson = ({
 					<div className="flex grow flex-row items-center">
 						<input
 							type="checkbox"
-							aria-label={`Include ${person.name} in the next match`}
-							title={`Include ${person.name} in the next match`}
+							aria-label={`Inkluder ${person.name} i næste lodtrækning`}
+							title={`Inkluder ${person.name} i næste lodtrækning`}
 							checked={selected}
 							onChange={onToggleSelected}
 							className="mr-3 size-4"
@@ -56,29 +56,29 @@ export const ListPerson = ({
 					</p>
 				</div>
 				<div className="flex w-full flex-wrap items-center gap-4 pl-3 sm:pl-0">
-					<Detail label="Partner:" value={partner?.name ?? "None"} />
-					<Detail label="Last year:" value={lastYearRecipient?.name ?? "None"} />
+					<Detail label="Partner:" value={partner?.name ?? "Ingen"} />
+					<Detail label="Sidste år:" value={lastYearRecipient?.name ?? "Ingen"} />
 				</div>
 				<div className="flex flex-row justify-end gap-2">
 					{pendingDelete === true ? (
 						<div className="flex items-center gap-2">
-							<span className="text-sm">Delete {person.name}?</span>
-							<Button behaviour="destructive" onClick={onDelete}>
-								Confirm
-							</Button>
+							<span className="text-sm">Slet {person.name}?</span>
 							<Button behaviour="neutral" onClick={() => setPendingDelete(false)}>
 								Cancel
+							</Button>
+							<Button behaviour="destructive" onClick={onDelete}>
+								Bekræft
 							</Button>
 						</div>
 					) : (
 						<>
 							<Button behaviour="neutral" onClick={onEdit}>
 								<FaPen className="size-3" />
-								<span>Edit</span>
+								<span>Rediger</span>
 							</Button>
 							<Button behaviour="destructive" onClick={() => setPendingDelete(true)}>
 								<FaRegTrashCan className="size-3" />
-								<span>Delete</span>
+								<span>Slet</span>
 							</Button>
 						</>
 					)}

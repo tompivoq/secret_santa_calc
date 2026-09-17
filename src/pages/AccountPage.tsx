@@ -8,7 +8,7 @@ import { Modal } from "../components/shared/Modal";
 
 /** One read-only "Label / value" row of someone's own details. */
 const Detail = ({ label, value }: { label: string; value: string }) => (
-	<div className="flex flex-row justify-between gap-4">
+	<div className="flex w-60 flex-row justify-between gap-4">
 		<span className="text-sm font-semibold">{label}</span>
 		<span className="text-sm">{value}</span>
 	</div>
@@ -39,47 +39,51 @@ function AccountPage() {
 		<div className="mt-8 flex flex-col items-stretch gap-4 text-left">
 			<div className="border-blue-spruce-400 rounded-xl border p-5 text-center">
 				{isLoading ? (
-					<p>Checking for your match…</p>
+					<p>Finder dit match...</p>
 				) : match?.recipient ? (
 					<>
-						<p className="text-sm">You're the secret santa for</p>
+						<p className="text-sm">Du skal give en gave til:</p>
 						<p className="text-metallic-gold-500 mt-1 text-2xl font-medium">
 							{match.recipient.name}
 						</p>
 					</>
 				) : (
-					<p>You haven't been matched yet — check back after the draw.</p>
+					<p>
+						Nisserne har ikke trukket lod endnu.
+						<br />
+						Kom tilbage efter lodtrækningen for at se hvem du skal give en gave til i år.
+					</p>
 				)}
 			</div>
 
 			<div className="border-blue-spruce-400 flex flex-col gap-3 rounded-xl border p-5">
-				<h2 className="text-lg">Your details</h2>
-				<Detail label="Name" value={person.name} />
-				<Detail label="Email" value={person.email} />
-				<Detail label="Phone" value={String(person.phone)} />
+				<h2 className="text-lg">Dine info</h2>
+				<Detail label="Navn" value={person.name} />
+				<Detail label="E-mail" value={person.email} />
+				<Detail label="Telefon" value={String(person.phone)} />
 				{/* Partner and last year's recipient aren't here on purpose —
 				    they decide who you can be matched with, so they belong to
 				    whoever runs the draw. */}
 				<div className="flex flex-row justify-end gap-2">
 					<Button behaviour="neutral" onClick={() => setOpenDialog("password")}>
-						Change password
+						Ændre password
 					</Button>
 					<Button behaviour="action" onClick={() => setOpenDialog("details")}>
-						Edit details
+						Rediger info
 					</Button>
 				</div>
 			</div>
 
 			{openDialog === "details" && (
-				<Modal open onClose={() => setOpenDialog(null)} title="Edit your details">
+				<Modal open onClose={() => setOpenDialog(null)} title="Rediger din info">
 					<EditMyDetailsForm person={person} onDone={() => setOpenDialog(null)} />
 				</Modal>
 			)}
 
 			{openDialog === "password" && (
-				<Modal open onClose={() => setOpenDialog(null)} title="Change your password">
+				<Modal open onClose={() => setOpenDialog(null)} title="Ændre dit password">
 					<ChangePasswordForm
-						intro="Pick a new password. You'll need your current one to change it."
+						intro="Vælg et nyt password. Du skal bruge dit gamle for at ændre det."
 						onSuccess={() => setOpenDialog(null)}
 					/>
 				</Modal>

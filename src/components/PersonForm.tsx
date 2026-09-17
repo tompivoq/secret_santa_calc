@@ -1,9 +1,10 @@
 import { useAddPersonMutation, useGetPeopleQuery } from "../store/peopleApi";
 import type { Person } from "../models/person";
 import { useForm } from "react-hook-form";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "./shared/Button";
 import { PersonDetailFields, type PersonDetailValues } from "./shared/PersonDetailFields";
+import { filter } from "lodash-es";
 
 interface FormData extends PersonDetailValues {
 	partnerId: number | undefined;
@@ -22,6 +23,11 @@ function PersonForm() {
 	const people = data ?? NO_PEOPLE;
 	const [addPerson] = useAddPersonMutation();
 	const [justCreated, setJustCreated] = useState<JustCreated | null>(null);
+
+	const validPartners = useMemo(
+		() => filter(people, (p) => p.partnerId === undefined || p.partnerId === null),
+		[people],
+	);
 
 	const {
 		register,
@@ -42,29 +48,29 @@ function PersonForm() {
 			setJustCreated({ name: created.name, email: created.email, phone: created.phone.toString() });
 			reset();
 		} catch {
-			setError("email", { message: "That email is already registered to someone else" });
+			setError("email", { message: "Den indtastede e-mail er allerede brugt til en anden bruger" });
 		}
 	};
 
 	return (
-		<div className="mt-8 flex flex-col gap-4">
+		<div className="flex flex-col gap-4 p-4">
 			{justCreated && (
 				<div className="border-ink-black-950 bg-blue-spruce-800 w-fit self-center rounded-xl border p-6 text-left text-sm">
 					<div className="flex flex-col gap-1">
 						<div className="flex flex-row gap-2">
-							<span className="font-semibold">{justCreated.name}</span> was added
+							<span className="font-semibold">{justCreated.name}</span> blev tilføjet
 						</div>
 						<div className="flex flex-row gap-2">
 							<span className="w-16 font-semibold">E-mail:</span>
 							{justCreated.email}
 						</div>
 						<div className="flex flex-row gap-2">
-							<span className="w-16 font-semibold">Phone:</span>
+							<span className="w-16 font-semibold">Telefon:</span>
 							{justCreated.phone}
 						</div>
 					</div>
 					<Button behaviour="neutral" className="mx-auto mt-2" onClick={() => setJustCreated(null)}>
-						Dismiss
+						Luk
 					</Button>
 				</div>
 			)}
@@ -81,13 +87,13 @@ function PersonForm() {
 					<select
 						id="partner"
 						{...register("partnerId", {
-							disabled: people.length < 1,
+							disabled: validPartners.length < 1,
 							setValueAs: (value) => (value === "" ? undefined : Number(value)),
 						})}
 						className="rounded-md border border-gray-300 px-2.5 py-2 text-base disabled:opacity-50 dark:border-gray-700"
 					>
-						<option value="">None</option>
-						{people.map((person) => (
+						<option value="">Ingen</option>
+						{validPartners.map((person) => (
 							<option key={person.id} value={person.id}>
 								{person.name}
 							</option>
@@ -96,7 +102,7 @@ function PersonForm() {
 				</div>
 				<div className="flex w-full flex-row justify-end">
 					<Button type="submit" disabled={!isValid} behaviour="action">
-						Add Person
+						Tilføj person
 					</Button>
 				</div>
 			</form>

@@ -58,14 +58,14 @@ describe("seeing your own match", () => {
 		renderAccountPage();
 
 		await screen.findByText("Anna");
-		expect(screen.getByText("You're the secret santa for")).not.toBeNull();
+		expect(screen.getByText("Du skal give en gave til:")).not.toBeNull();
 	});
 
 	it("still says nothing has been drawn when there's no match yet", async () => {
 		stubApi({ recipient: null });
 		renderAccountPage();
 
-		await screen.findByText("You haven't been matched yet — check back after the draw.");
-		expect(screen.queryByText("You're the secret santa for")).toBeNull();
+		await screen.findByText(/Nisserne har ikke trukket lod endnu/);
+		expect(screen.queryByText("Du skal give en gave til:")).toBeNull();
 	});
 });

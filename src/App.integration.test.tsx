@@ -133,31 +133,31 @@ const addPerson = async (
 	phone: string,
 	partnerName?: string,
 ) => {
-	// The "Add people" form is collapsed by default — expand it if it isn't
+	// The "Tilføj person" form is collapsed by default — expand it if it isn't
 	// already (it stays open across repeat calls within the same test, so
 	// this is a no-op after the first). AdminPage is also gated behind
 	// AdminRoute, which shows a "Loading…" state until the (stubbed)
 	// /api/auth/me check resolves — findByText waits that out on the first call.
-	if (screen.queryByLabelText("Name") === null) {
-		await user.click(await screen.findByText("Add people"));
+	if (screen.queryByLabelText("Navn") === null) {
+		await user.click(await screen.findByText("Tilføj person"));
 	}
-	await user.clear(await screen.findByLabelText("Name"));
-	await user.clear(screen.getByLabelText("Email"));
-	await user.clear(screen.getByLabelText("Phone"));
-	await user.type(screen.getByLabelText("Name"), name);
-	await user.type(screen.getByLabelText("Email"), email);
-	await user.type(screen.getByLabelText("Phone"), phone);
+	await user.clear(await screen.findByLabelText("Navn"));
+	await user.clear(screen.getByLabelText("E-mail"));
+	await user.clear(screen.getByLabelText("Telefon-nummer"));
+	await user.type(screen.getByLabelText("Navn"), name);
+	await user.type(screen.getByLabelText("E-mail"), email);
+	await user.type(screen.getByLabelText("Telefon-nummer"), phone);
 	if (partnerName) {
 		await user.selectOptions(
 			screen.getByLabelText("Partner", { selector: "#partner" }),
 			partnerName,
 		);
 	}
-	await user.click(screen.getByRole("button", { name: "Add Person" }));
+	await user.click(screen.getByRole("button", { name: "Tilføj person" }));
 	// Adding a person shows a one-time "here's their initial password" banner
 	// that repeats the person's name — dismiss it so later assertions in this
 	// test that look up a person's name in the list stay unambiguous.
-	await user.click(await screen.findByRole("button", { name: "Dismiss" }));
+	await user.click(await screen.findByRole("button", { name: "Luk" }));
 };
 
 /**
@@ -171,9 +171,9 @@ const openEditDialogFor = async (user: ReturnType<typeof userEvent.setup>, name:
 	if (!row) {
 		throw new Error(`No row found for ${name}`);
 	}
-	await user.click(within(row).getByRole("button", { name: "Edit" }));
+	await user.click(within(row).getByRole("button", { name: "Rediger" }));
 	// Scoped to the dialog: the add-person form is open behind it and has
-	// its own Name/Email/Phone fields with the same labels.
+	// its own Navn/E-mail/Telefon-nummer fields with the same labels.
 	return within(await screen.findByRole("dialog"));
 };
 
@@ -219,8 +219,8 @@ describe("App: renders people and their partners as returned by the API", () => 
 		await addPerson(user, "Anna", "anna@example.com", "22334455");
 
 		const dialog = await openEditDialogFor(user, "Anna");
-		await user.selectOptions(dialog.getByLabelText("Last year"), "Bjørn");
-		await user.click(dialog.getByRole("button", { name: "Save changes" }));
+		await user.selectOptions(dialog.getByLabelText("Sidste år"), "Bjørn");
+		await user.click(dialog.getByRole("button", { name: "Gem ændringer" }));
 
 		// Anna gave to Bjørn last year. Who gave to *her* is a separate fact,
 		// so unlike a partner link this sets nothing on Bjørn.
@@ -238,17 +238,17 @@ describe("App: renders people and their partners as returned by the API", () => 
 		await addPerson(user, "Anna", "anna@example.com", "22334455");
 
 		const dialog = await openEditDialogFor(user, "Anna");
-		await user.clear(dialog.getByLabelText("Name"));
-		await user.type(dialog.getByLabelText("Name"), "Anna Marie");
-		await user.clear(dialog.getByLabelText("Phone"));
-		await user.type(dialog.getByLabelText("Phone"), "99887766");
-		await user.click(dialog.getByRole("button", { name: "Save changes" }));
+		await user.clear(dialog.getByLabelText("Navn"));
+		await user.type(dialog.getByLabelText("Navn"), "Anna Marie");
+		await user.clear(dialog.getByLabelText("Telefon-nummer"));
+		await user.type(dialog.getByLabelText("Telefon-nummer"), "99887766");
+		await user.click(dialog.getByRole("button", { name: "Gem ændringer" }));
 
 		await waitFor(() => {
 			expect(people[0]).toMatchObject({ name: "Anna Marie", phone: 99887766 });
 		});
 		// The dialog closes on success rather than leaving them wondering.
-		expect(screen.queryByRole("button", { name: "Save changes" })).toBeNull();
+		expect(screen.queryByRole("button", { name: "Gem ændringer" })).toBeNull();
 	});
 
 	it("keeps the dialog open and explains when the email is taken", async () => {
@@ -260,11 +260,11 @@ describe("App: renders people and their partners as returned by the API", () => 
 		await addPerson(user, "Anna", "anna@example.com", "22334455");
 
 		const dialog = await openEditDialogFor(user, "Anna");
-		await user.clear(dialog.getByLabelText("Email"));
-		await user.type(dialog.getByLabelText("Email"), "bjorn@example.com");
-		await user.click(dialog.getByRole("button", { name: "Save changes" }));
+		await user.clear(dialog.getByLabelText("E-mail"));
+		await user.type(dialog.getByLabelText("E-mail"), "bjorn@example.com");
+		await user.click(dialog.getByRole("button", { name: "Gem ændringer" }));
 
-		await dialog.findByText("That email is already registered to someone else");
-		expect(dialog.getByRole("button", { name: "Save changes" })).not.toBeNull();
+		await dialog.findByText("Den indtastede e-mail er allerede brugt til en anden bruger");
+		expect(dialog.getByRole("button", { name: "Gem ændringer" })).not.toBeNull();
 	});
 });

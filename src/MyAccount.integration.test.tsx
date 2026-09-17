@@ -88,14 +88,13 @@ const openDialog = async (user: ReturnType<typeof userEvent.setup>, button: stri
 };
 
 /**
- * The "Your details" card. Scoped rather than queried globally because the
- * nav bar also says "Signed in as <name>", so the name alone matches twice.
+ * The "Dine info" card. Scoped rather than queried globally because the
+ * nav bar also says "Logget ind som <name>", so the name alone matches twice.
  * Re-resolved on each call so it reflects the current render.
  */
-const inDetails = () =>
-	within(screen.getByRole("heading", { name: "Your details" }).parentElement!);
+const inDetails = () => within(screen.getByRole("heading", { name: "Dine info" }).parentElement!);
 
-const waitForDetails = () => screen.findByRole("heading", { name: "Your details" });
+const waitForDetails = () => screen.findByRole("heading", { name: "Dine info" });
 
 describe("seeing and editing your own details", () => {
 	it("shows your details, and not the draw settings", async () => {
@@ -109,7 +108,7 @@ describe("seeing and editing your own details", () => {
 		// Partner and last year's recipient decide who you can be matched
 		// with, so they're the admin's to set — not offered here at all.
 		expect(inDetails().queryByText("Partner")).toBeNull();
-		expect(inDetails().queryByText("Last year")).toBeNull();
+		expect(inDetails().queryByText("Sidste år")).toBeNull();
 	});
 
 	it("saves a change and shows it afterwards", async () => {
@@ -118,10 +117,10 @@ describe("seeing and editing your own details", () => {
 		renderAccountPage();
 
 		await waitForDetails();
-		const dialog = await openDialog(user, "Edit details");
-		await user.clear(dialog.getByLabelText("Name"));
-		await user.type(dialog.getByLabelText("Name"), "Anna Marie");
-		await user.click(dialog.getByRole("button", { name: "Save changes" }));
+		const dialog = await openDialog(user, "Rediger info");
+		await user.clear(dialog.getByLabelText("Navn"));
+		await user.type(dialog.getByLabelText("Navn"), "Anna Marie");
+		await user.click(dialog.getByRole("button", { name: "Gem ændringer" }));
 
 		await waitFor(() => expect(inDetails().getByText("Anna Marie")).not.toBeNull());
 		expect(currentPerson().name).toBe("Anna Marie");
@@ -134,10 +133,10 @@ describe("seeing and editing your own details", () => {
 		renderAccountPage();
 
 		await waitForDetails();
-		const dialog = await openDialog(user, "Edit details");
-		await user.clear(dialog.getByLabelText("Phone"));
-		await user.type(dialog.getByLabelText("Phone"), "99887766");
-		await user.click(dialog.getByRole("button", { name: "Save changes" }));
+		const dialog = await openDialog(user, "Rediger info");
+		await user.clear(dialog.getByLabelText("Telefon-nummer"));
+		await user.type(dialog.getByLabelText("Telefon-nummer"), "99887766");
+		await user.click(dialog.getByRole("button", { name: "Gem ændringer" }));
 
 		await waitFor(() => expect(patchedMe).toHaveLength(1));
 		// The server refuses partner/lastYearRecipientId here regardless, but
@@ -154,12 +153,12 @@ describe("seeing and editing your own details", () => {
 		renderAccountPage();
 
 		await waitForDetails();
-		const dialog = await openDialog(user, "Edit details");
-		await user.clear(dialog.getByLabelText("Email"));
-		await user.type(dialog.getByLabelText("Email"), "taken@example.com");
-		await user.click(dialog.getByRole("button", { name: "Save changes" }));
+		const dialog = await openDialog(user, "Rediger info");
+		await user.clear(dialog.getByLabelText("E-mail"));
+		await user.type(dialog.getByLabelText("E-mail"), "taken@example.com");
+		await user.click(dialog.getByRole("button", { name: "Gem ændringer" }));
 
-		await dialog.findByText("That email is already registered to someone else");
+		await dialog.findByText("Den indtastede e-mail er allerede brugt til en anden bruger");
 		expect(screen.getByRole("dialog")).not.toBeNull();
 	});
 });
@@ -171,14 +170,14 @@ describe("changing your own password", () => {
 		renderAccountPage();
 
 		await waitForDetails();
-		const dialog = await openDialog(user, "Change password");
+		const dialog = await openDialog(user, "Ændre password");
 
 		// Changing it by choice, so the current one is required — unlike the
 		// forced first-login flow reached from a magic link.
-		await user.type(dialog.getByLabelText("Current password"), "old-password");
-		await user.type(dialog.getByLabelText("New password"), "a-brand-new-password");
-		await user.type(dialog.getByLabelText("Confirm new password"), "a-brand-new-password");
-		await user.click(dialog.getByRole("button", { name: "Set password" }));
+		await user.type(dialog.getByLabelText("Nuværende password"), "old-password");
+		await user.type(dialog.getByLabelText("Nyt password"), "a-brand-new-password");
+		await user.type(dialog.getByLabelText("Bekræft nyt password"), "a-brand-new-password");
+		await user.click(dialog.getByRole("button", { name: "Sæt nyt password" }));
 
 		await waitFor(() => expect(passwordChanges).toHaveLength(1));
 		expect(passwordChanges[0]).toEqual({
@@ -195,9 +194,9 @@ describe("changing your own password", () => {
 		renderAccountPage();
 
 		await waitForDetails();
-		const dialog = await openDialog(user, "Change password");
+		const dialog = await openDialog(user, "Ændre password");
 
-		expect(dialog.queryByText(/first time logging in/)).toBeNull();
-		expect(dialog.getByText(/You'll need your current one/)).not.toBeNull();
+		expect(dialog.queryByText(/Indstil et nyt password/)).toBeNull();
+		expect(dialog.getByText(/Du skal bruge dit gamle/)).not.toBeNull();
 	});
 });

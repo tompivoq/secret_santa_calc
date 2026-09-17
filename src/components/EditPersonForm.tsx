@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import type { Person } from "../models/person";
 import { useUpdatePersonMutation } from "../store/peopleApi";
-import { Button } from "./shared/Button";
+import { FormActionButtons } from "./shared/Button";
 import { PersonDetailFields, type PersonDetailValues } from "./shared/PersonDetailFields";
 
 interface FormData extends PersonDetailValues {
@@ -54,9 +54,13 @@ function EditPersonForm({ person, others, onDone }: EditPersonFormProps) {
 			onDone();
 		} catch (error) {
 			if (errorStatus(error) === 409) {
-				setError("email", { message: "That email is already registered to someone else" });
+				setError("email", {
+					message: "Den indtastede e-mail er allerede brugt til en anden bruger",
+				});
 			} else {
-				setError("root", { message: "Couldn't save those changes. Please try again." });
+				setError("root", {
+					message: "Hmm... Noget gik galt med at gemme ændringerne. Prøv venligst igen.",
+				});
 			}
 		}
 	};
@@ -76,7 +80,7 @@ function EditPersonForm({ person, others, onDone }: EditPersonFormProps) {
 					})}
 					className="rounded-md border border-gray-300 px-2.5 py-2 text-base dark:border-gray-700"
 				>
-					<option value="">None</option>
+					<option value="">Ingen</option>
 					{others.map((other) => (
 						<option key={other.id} value={other.id}>
 							{other.name}
@@ -87,7 +91,7 @@ function EditPersonForm({ person, others, onDone }: EditPersonFormProps) {
 
 			<div className="flex flex-col gap-1">
 				<label htmlFor="edit-last-year" className="text-sm font-semibold">
-					Last year
+					Sidste år
 				</label>
 				<select
 					id="edit-last-year"
@@ -96,7 +100,7 @@ function EditPersonForm({ person, others, onDone }: EditPersonFormProps) {
 					})}
 					className="rounded-md border border-gray-300 px-2.5 py-2 text-base dark:border-gray-700"
 				>
-					<option value="">None</option>
+					<option value="">Ingen</option>
 					{others.map((other) => (
 						<option key={other.id} value={other.id}>
 							{other.name}
@@ -104,8 +108,8 @@ function EditPersonForm({ person, others, onDone }: EditPersonFormProps) {
 					))}
 				</select>
 				<span className="text-sm text-gray-600 dark:text-gray-400">
-					Who they gave to last year, if that happened outside this app. Only used until a draw here
-					has one of its own to go on.
+					Hvem de gav til sidste år, hvis lodtrækningen blev foretaget udenfor denne app. Hvis der
+					er en tidligere lodtrækning her, bliver data derfra brugt i stedet.
 				</span>
 			</div>
 
@@ -113,14 +117,7 @@ function EditPersonForm({ person, others, onDone }: EditPersonFormProps) {
 				<span className="text-sm text-red-600 dark:text-red-400">{errors.root.message}</span>
 			)}
 
-			<div className="flex flex-row justify-end gap-2">
-				<Button type="button" behaviour="neutral" onClick={onDone}>
-					Cancel
-				</Button>
-				<Button type="submit" behaviour="action" disabled={!isValid || isLoading}>
-					{isLoading ? "Saving…" : "Save changes"}
-				</Button>
-			</div>
+			<FormActionButtons onCancel={onDone} isFormValid={isValid} isLoading={isLoading} />
 		</form>
 	);
 }

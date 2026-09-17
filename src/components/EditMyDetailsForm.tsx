@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import type { Person } from "../models/person";
 import { useUpdateMeMutation } from "../store/authApi";
-import { Button } from "./shared/Button";
+import { FormActionButtons } from "./shared/Button";
 import { PersonDetailFields, type PersonDetailValues } from "./shared/PersonDetailFields";
 
 type FormData = PersonDetailValues;
@@ -46,9 +46,13 @@ function EditMyDetailsForm({ person, onDone }: EditMyDetailsFormProps) {
 			onDone();
 		} catch (error) {
 			if (errorStatus(error) === 409) {
-				setError("email", { message: "That email is already registered to someone else" });
+				setError("email", {
+					message: "Den indtastede e-mail er allerede brugt til en anden bruger",
+				});
 			} else {
-				setError("root", { message: "Couldn't save those changes. Please try again." });
+				setError("root", {
+					message: "Hmm... Noget gik galt med at gemme ændringerne. Prøv venligst igen.",
+				});
 			}
 		}
 	};
@@ -59,21 +63,14 @@ function EditMyDetailsForm({ person, onDone }: EditMyDetailsFormProps) {
 				idPrefix="me-"
 				register={register}
 				errors={errors}
-				emailNote="This is also what you log in with, and where your match link is sent."
+				emailNote="Din e-mail bruger du til at logge ind med. Det er også her vi sender beskeder til dig, så sørg for den er gyldig."
 			/>
 
 			{errors.root && (
 				<span className="text-sm text-red-600 dark:text-red-400">{errors.root.message}</span>
 			)}
 
-			<div className="flex flex-row justify-end gap-2">
-				<Button type="button" behaviour="neutral" onClick={onDone}>
-					Cancel
-				</Button>
-				<Button type="submit" behaviour="action" disabled={!isValid || isLoading}>
-					{isLoading ? "Saving…" : "Save changes"}
-				</Button>
-			</div>
+			<FormActionButtons onCancel={onDone} isFormValid={isValid} isLoading={isLoading} />
 		</form>
 	);
 }

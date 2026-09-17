@@ -21,7 +21,7 @@ function RequireAuth({
 	const { data, isLoading, isError } = useMeQuery();
 
 	if (isLoading) {
-		return <p className="mt-8">Loading…</p>;
+		return <p className="mt-8">Henter data...</p>;
 	}
 
 	if (isError || !data) {
@@ -35,7 +35,7 @@ function RequireAuth({
 	if (adminOnly && !data.person.isAdmin) {
 		return (
 			<p className="border-blue-spruce-400 mt-8 rounded-xl border p-5 text-center">
-				You don't have access to this page.
+				Du har desværre ikke adgang til denne side
 			</p>
 		);
 	}

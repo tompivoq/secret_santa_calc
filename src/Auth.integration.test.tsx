@@ -149,22 +149,22 @@ describe("logging in", () => {
 		const user = userEvent.setup();
 		renderAt("/login");
 
-		await user.type(screen.getByLabelText("Email"), PERSON.email);
+		await user.type(screen.getByLabelText("E-mail"), PERSON.email);
 		await user.type(screen.getByLabelText("Password"), "initial-pw");
-		await user.click(screen.getByRole("button", { name: "Log in" }));
+		await user.click(screen.getByRole("button", { name: "Log ind" }));
 
-		await screen.findByText("This is your first time logging in — please set a new password.");
+		await screen.findByText("Indstil et nyt password");
 
 		// A non-admin gets no way into the people-management page — see the
 		// "admin access" describe block below for the page itself being gated.
-		expect(screen.queryByRole("link", { name: "Manage people" })).toBeNull();
+		expect(screen.queryByRole("link", { name: "Deltagere" })).toBeNull();
 
-		await user.type(screen.getByLabelText("Current password"), "initial-pw");
-		await user.type(screen.getByLabelText("New password"), "a-brand-new-password");
-		await user.type(screen.getByLabelText("Confirm new password"), "a-brand-new-password");
-		await user.click(screen.getByRole("button", { name: "Set password" }));
+		await user.type(screen.getByLabelText("Nuværende password"), "initial-pw");
+		await user.type(screen.getByLabelText("Nyt password"), "a-brand-new-password");
+		await user.type(screen.getByLabelText("Bekræft nyt password"), "a-brand-new-password");
+		await user.click(screen.getByRole("button", { name: "Sæt nyt password" }));
 
-		await screen.findByText("You haven't been matched yet — check back after the draw.");
+		await screen.findByText(/Nisserne har ikke trukket lod endnu/);
 	});
 
 	it("explains an expired magic link rather than silently showing the login form", async () => {
@@ -173,7 +173,7 @@ describe("logging in", () => {
 
 		// Where GET /api/auth/magic/:token redirects a link that's already been
 		// followed. Without this it looks like an unexplained trip to /login.
-		await screen.findByText(/That login link has already been used or has expired/);
+		await screen.findByText(/Dit link er allerede blevet brugt/);
 	});
 
 	it("shows an error and stays on the login page for the wrong password", async () => {
@@ -181,11 +181,11 @@ describe("logging in", () => {
 		const user = userEvent.setup();
 		renderAt("/login");
 
-		await user.type(screen.getByLabelText("Email"), PERSON.email);
+		await user.type(screen.getByLabelText("E-mail"), PERSON.email);
 		await user.type(screen.getByLabelText("Password"), "the-wrong-password");
-		await user.click(screen.getByRole("button", { name: "Log in" }));
+		await user.click(screen.getByRole("button", { name: "Log ind" }));
 
-		await screen.findByText("Incorrect email or password");
+		await screen.findByText("Forkert email eller password");
 	});
 
 	it("does not bounce back to /login while the invalidated me-query is still refetching", async () => {
@@ -222,38 +222,43 @@ describe("logging in", () => {
 		const user = userEvent.setup();
 		renderAt("/login");
 
-		await user.type(screen.getByLabelText("Email"), PERSON.email);
+		await user.type(screen.getByLabelText("E-mail"), PERSON.email);
 		await user.type(screen.getByLabelText("Password"), "whatever");
-		await user.click(screen.getByRole("button", { name: "Log in" }));
+		await user.click(screen.getByRole("button", { name: "Log ind" }));
 
 		// Without the fix, RequireAuth would instead read the still-cached
 		// pre-login 401 (the me-query refetch above never settles to replace
 		// it) and redirect straight back to /login.
-		await screen.findByText("You haven't been matched yet — check back after the draw.");
+		await screen.findByText(/Nisserne har ikke trukket lod endnu/);
 	});
 });
 
 describe("logging out", () => {
 	it("hides the nav's links and signed-in info, not just the page content", async () => {
-		stubAuthApi({ startAuthenticated: true, mustChangePassword: false });
+		// As an admin, because only admins get nav links at all now — a
+		// non-admin has nothing to see disappear, which would let the absence
+		// checks below pass without proving anything.
+		const admin: Person = { ...PERSON, isAdmin: true };
+		stubAuthApi({ person: admin, startAuthenticated: true, mustChangePassword: false });
 		const user = userEvent.setup();
 		renderAt("/account");
 
-		await screen.findByText("You haven't been matched yet — check back after the draw.");
-		expect(screen.getByRole("link", { name: "My account" })).not.toBeNull();
+		await screen.findByText(/Nisserne har ikke trukket lod endnu/);
+		expect(screen.getByRole("link", { name: "Min side" })).not.toBeNull();
+		expect(screen.getByText(/Logget ind som/)).not.toBeNull();
 
-		await user.click(screen.getByRole("button", { name: "Log out" }));
+		await user.click(screen.getByRole("button", { name: "Log ud" }));
 
 		// Redirected to the login page...
-		await screen.findByLabelText("Email");
+		await screen.findByLabelText("E-mail");
 		// ...and the nav bar — which stays mounted across route changes,
 		// unlike the page content it wraps — no longer shows the signed-in
 		// links either. Before the fix, TopBarNav kept rendering them because
 		// it only checked `me !== undefined`: RTK Query keeps the last
 		// successful `data` around even once the invalidated "me" query's
 		// refetch errors, so `me` alone stayed truthy after logout.
-		expect(screen.queryByRole("link", { name: "My account" })).toBeNull();
-		expect(screen.queryByText(/Signed in as/)).toBeNull();
+		expect(screen.queryByRole("link", { name: "Min side" })).toBeNull();
+		expect(screen.queryByText(/Logget ind som/)).toBeNull();
 	});
 });
 
@@ -262,8 +267,8 @@ describe("admin access to the people-management page", () => {
 		stubAuthApi({ startAuthenticated: true, mustChangePassword: false });
 		renderAt("/");
 
-		await screen.findByText("You don't have access to this page.");
-		expect(screen.queryByLabelText("Name")).toBeNull();
+		await screen.findByText("Du har desværre ikke adgang til denne side");
+		expect(screen.queryByLabelText("Navn")).toBeNull();
 	});
 
 	it("shows the page, and the nav link, to a logged-in admin", async () => {
@@ -273,8 +278,8 @@ describe("admin access to the people-management page", () => {
 
 		// The "Add people" form is collapsed by default — its toggle is enough
 		// to prove the admin page itself rendered.
-		await screen.findByText("Add people");
-		expect(screen.getByRole("link", { name: "Manage people" })).not.toBeNull();
+		await screen.findByText("Tilføj person");
+		expect(screen.getByRole("link", { name: "Deltagere" })).not.toBeNull();
 	});
 });
 
@@ -291,15 +296,15 @@ describe("arriving from a magic link with no password yet", () => {
 		renderAt("/account");
 
 		// Sent to set one, rather than straight through to their match...
-		await screen.findByText(/Pick a password/);
+		await screen.findByText(/Vælg venligst et password/);
 		// ...and not asked for a password they have never had.
-		expect(screen.queryByLabelText("Current password")).toBeNull();
+		expect(screen.queryByLabelText("Nuværende password")).toBeNull();
 
-		await user.type(screen.getByLabelText("New password"), "a-brand-new-password");
-		await user.type(screen.getByLabelText("Confirm new password"), "a-brand-new-password");
-		await user.click(screen.getByRole("button", { name: "Set password" }));
+		await user.type(screen.getByLabelText("Nyt password"), "a-brand-new-password");
+		await user.type(screen.getByLabelText("Bekræft nyt password"), "a-brand-new-password");
+		await user.click(screen.getByRole("button", { name: "Sæt nyt password" }));
 
-		await screen.findByText("You haven't been matched yet — check back after the draw.");
+		await screen.findByText(/Nisserne har ikke trukket lod endnu/);
 		expect(changeRequests).toEqual([{ newPassword: "a-brand-new-password" }]);
 	});
 
@@ -307,8 +312,8 @@ describe("arriving from a magic link with no password yet", () => {
 		stubAuthApi({ startAuthenticated: true, mustChangePassword: true });
 		renderAt("/account");
 
-		await screen.findByText("This is your first time logging in — please set a new password.");
-		expect(screen.getByLabelText("Current password")).not.toBeNull();
+		await screen.findByText("Indstil et nyt password");
+		expect(screen.getByLabelText("Nuværende password")).not.toBeNull();
 	});
 });
 
@@ -317,10 +322,8 @@ describe("a pending forced password change blocks every other page", () => {
 		stubAuthApi({ startAuthenticated: true, mustChangePassword: true });
 		renderAt("/account");
 
-		await screen.findByText("This is your first time logging in — please set a new password.");
-		expect(
-			screen.queryByText("You haven't been matched yet — check back after the draw."),
-		).toBeNull();
+		await screen.findByText("Indstil et nyt password");
+		expect(screen.queryByText(/Nisserne har ikke trukket lod endnu/)).toBeNull();
 	});
 
 	it("redirects an admin away from the people-management page to the change-password form", async () => {
@@ -328,15 +331,15 @@ describe("a pending forced password change blocks every other page", () => {
 		stubAuthApi({ person: admin, startAuthenticated: true, mustChangePassword: true });
 		renderAt("/");
 
-		await screen.findByText("This is your first time logging in — please set a new password.");
-		expect(screen.queryByLabelText("Name")).toBeNull();
+		await screen.findByText("Indstil et nyt password");
+		expect(screen.queryByLabelText("Navn")).toBeNull();
 	});
 
 	it("bounces away from the change-password page once nothing is pending", async () => {
 		stubAuthApi({ startAuthenticated: true, mustChangePassword: false });
 		renderAt("/change-password");
 
-		await screen.findByText("You haven't been matched yet — check back after the draw.");
+		await screen.findByText(/Nisserne har ikke trukket lod endnu/);
 	});
 
 	it("does not bounce back to /change-password while the invalidated me-query is still refetching", async () => {
@@ -373,16 +376,16 @@ describe("a pending forced password change blocks every other page", () => {
 		const user = userEvent.setup();
 		renderAt("/change-password");
 
-		await screen.findByText("This is your first time logging in — please set a new password.");
+		await screen.findByText("Indstil et nyt password");
 
-		await user.type(screen.getByLabelText("Current password"), "initial-pw");
-		await user.type(screen.getByLabelText("New password"), "a-brand-new-password");
-		await user.type(screen.getByLabelText("Confirm new password"), "a-brand-new-password");
-		await user.click(screen.getByRole("button", { name: "Set password" }));
+		await user.type(screen.getByLabelText("Nuværende password"), "initial-pw");
+		await user.type(screen.getByLabelText("Nyt password"), "a-brand-new-password");
+		await user.type(screen.getByLabelText("Bekræft nyt password"), "a-brand-new-password");
+		await user.click(screen.getByRole("button", { name: "Sæt nyt password" }));
 
 		// Without the fix, RequireAuth would instead read the still-cached
 		// mustChangePassword: true (the me-query refetch above never settles
 		// to replace it) and redirect straight back to /change-password.
-		await screen.findByText("You haven't been matched yet — check back after the draw.");
+		await screen.findByText(/Nisserne har ikke trukket lod endnu/);
 	});
 });

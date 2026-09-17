@@ -25,11 +25,11 @@ const errorStatus = (error: unknown): number | undefined =>
 const draftErrorMessage = (error: unknown): string => {
 	switch (errorStatus(error)) {
 		case 422:
-			return "No valid match exists for the selected people — check that no one's only possible recipient is their partner.";
+			return "Ingen gyldig lodtrækning fundet for de valgte deltagere. Er der nogen hvis eneste mulige modtager er deres egen partner?";
 		case 409:
-			return "The draw is already locked in. Start a new draw to change it.";
+			return "Lodtrækningen er allerede låst fast. Start en ny for at ændre den.";
 		default:
-			return "Something went wrong running the match. Please try again.";
+			return "Noget gik galt under lodtrækningen. Prøv venligst igen";
 	}
 };
 
@@ -43,11 +43,11 @@ const DrawSummary = ({ draw, nameById }: { draw: Draw; nameById: Map<number, str
 		return (
 			<div className="flex flex-col gap-1 text-sm">
 				<p>
-					<span className="font-medium">{draw.participantIds.length} people</span> were matched:{" "}
-					{draw.participantIds.map((id) => nameById.get(id) ?? "Unknown").join(", ")}.
+					<span className="font-medium">{draw.participantIds.length} deltagere</span> blev matched:{" "}
+					{draw.participantIds.map((id) => nameById.get(id) ?? "Ukendt").join(", ")}.
 				</p>
 				<p className="text-gray-600 dark:text-gray-400">
-					Who drew whom is hidden — including from you, so your own match stays a surprise.
+					Resultatet vil være skjult, også fra dig så din egen match er en overraskelse.
 				</p>
 			</div>
 		);
@@ -57,8 +57,8 @@ const DrawSummary = ({ draw, nameById }: { draw: Draw; nameById: Map<number, str
 		<ul className="flex flex-col gap-1 text-sm">
 			{draw.assignments.map((assignment) => (
 				<li key={assignment.id}>
-					<span className="font-medium">{nameById.get(assignment.giverId) ?? "Unknown"}</span> →{" "}
-					{nameById.get(assignment.recipientId) ?? "Unknown"}
+					<span className="font-medium">{nameById.get(assignment.giverId) ?? "Ukendt"}</span> →{" "}
+					{nameById.get(assignment.recipientId) ?? "Ukendt"}
 				</li>
 			))}
 		</ul>
@@ -77,7 +77,8 @@ const NotifyPanel = ({ draw, nameById }: { draw: Draw; nameById: Map<number, str
 	return (
 		<div className="border-blue-spruce-400 flex flex-col gap-2 border-t pt-3">
 			<p className="text-sm">
-				{draw.notifiedIds.length} of {draw.participantIds.length} have been emailed their link.
+				{draw.notifiedIds.length} ud af {draw.participantIds.length} har fået tilsendt deres
+				login-link.
 			</p>
 
 			{waiting.length > 0 ? (
@@ -88,10 +89,10 @@ const NotifyPanel = ({ draw, nameById }: { draw: Draw; nameById: Map<number, str
 						disabled={isLoading}
 						onClick={() => void notify({})}
 					>
-						{isLoading ? "Sending…" : `Email the ${waiting.length} still waiting`}
+						{isLoading ? "Sender…" : `Send email til de ${waiting.length} der stadig venter`}
 					</Button>
 					<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-						Still to hear: {waiting.map((id) => nameById.get(id) ?? "Unknown").join(", ")}.
+						Mangler stadig besked: {waiting.map((id) => nameById.get(id) ?? "Ukendt").join(", ")}.
 					</p>
 				</div>
 			) : (
@@ -102,23 +103,23 @@ const NotifyPanel = ({ draw, nameById }: { draw: Draw; nameById: Map<number, str
 						disabled={isLoading}
 						onClick={() => void notify({ personIds: draw.participantIds })}
 					>
-						{isLoading ? "Sending…" : "Send everyone their link again"}
+						{isLoading ? "Sender…" : "Send alle deres link igen"}
 					</Button>
 					<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-						Everyone has been emailed. Sending again issues fresh links and retires the old ones.
+						Alle har fået tilsendt mail. Gensendelse udsteder friske links, og invaliderer de gamle.
 					</p>
 				</div>
 			)}
 
 			{error && (
 				<p className="text-sm text-red-600 dark:text-red-400">
-					Couldn't send the emails. Please try again.
+					Kunne ikke sende mails. Prøv venligst igen.
 				</p>
 			)}
 
 			{result && result.notified.length > 0 && (
 				<p className="text-sm">
-					Emailed {result.notified.map((person) => person.name).join(", ")}.
+					Sendte email til {result.notified.map((person) => person.name).join(", ")}.
 				</p>
 			)}
 
@@ -126,7 +127,7 @@ const NotifyPanel = ({ draw, nameById }: { draw: Draw; nameById: Map<number, str
 				<div className="text-sm text-red-600 dark:text-red-400">
 					{/* Named individually: the admin has to know who to chase, and a
 					    count alone wouldn't tell them. */}
-					<p>These couldn't be emailed — they'll be retried next time:</p>
+					<p>Kunne ikke sende til disse deltagere. De vil blive forsøgt igen næste gang:</p>
 					<ul className="mt-1 flex flex-col gap-1">
 						{result.failed.map((person) => (
 							<li key={person.personId}>
@@ -172,16 +173,16 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 
 	return (
 		<div className="border-t-metallic-gold-400 mt-4 flex flex-col gap-3 border-t p-4 text-left">
-			<h3 className="text-lg">Run the match</h3>
+			<h3 className="text-lg">Kør lodtrækningen</h3>
 
 			{isLocked ? (
 				<p className="text-sm">
-					Locked in on {new Date(currentDraw.lockedAt!).toLocaleDateString()}. Everyone can see
-					their own match.
+					Låst fast d. {new Date(currentDraw.lockedAt!).toLocaleDateString()}. Alle kan se deres
+					egen match!
 				</p>
 			) : (
 				<p className="text-sm">
-					Nothing is final until you lock it in — re-roll as many times as you like.
+					Intet er endeligt før du låser lodtrækningen fast. Genkør så mange gange du vil.
 				</p>
 			)}
 
@@ -194,12 +195,12 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 							onChange={(event) => setTestRun(event.target.checked)}
 							className="size-4 shrink-0"
 						/>
-						Test-run (show matches when done)
+						Test-kørsel
 					</label>
 					<p className="text-sm text-gray-600 dark:text-gray-400">
 						{testRun
-							? "You'll see everyone's match, including your own. Untick it for the real draw."
-							: "The real draw — nobody sees who drew whom, you included, so your own match stays a surprise."}
+							? "Parringer vil blive vist, inklusiv din egen. Fjern afkrydsning for at udføre den endelige lodtrækning."
+							: "Endelig lodtrækning!"}
 					</p>
 
 					<div>
@@ -208,16 +209,17 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 							behaviour="action"
 							disabled={selectedCount < 2 || isDrafting}
 							onClick={() => runDraft()}
+							name="Run match"
 						>
 							{isDrafting
-								? "Matching…"
+								? "Trækker lod..."
 								: currentDraw
-									? `Re-roll (${selectedCount} selected)`
-									: `Run match (${selectedCount} selected)`}
+									? `Re-roll (${selectedCount} valgt)`
+									: `Kør lodtrækning (${selectedCount} valgt)`}
 						</Button>
 						{selectedCount < 2 && (
 							<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-								Select at least 2 people to run a match.
+								Vælg mindst to deltagere for at køre en lodtrækning
 							</p>
 						)}
 					</div>
@@ -229,13 +231,13 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 			)}
 			{lockError && (
 				<p className="text-sm text-red-600 dark:text-red-400">
-					Couldn't lock the draw in. Please try again.
+					Kunne ikke låse lodtrækningen. Prøv venligst igen.
 				</p>
 			)}
 
 			{draftResult?.repeatedLastYear && (
 				<p className="text-sm text-gray-600 dark:text-gray-400">
-					Couldn't avoid last year's pairings for everyone in this group, so some are repeated.
+					Kunne ikke undgå sidste års parringer for alle i gruppen, så nogen er gentaget.
 				</p>
 			)}
 
@@ -243,7 +245,7 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 				<div className="border-blue-spruce-400 flex flex-col gap-3 rounded-xl border p-4">
 					{isStale && (
 						<p className="text-sm text-gray-600 dark:text-gray-400">
-							Selection has changed since this was drawn — re-roll to update it.
+							Valgte deltagere er ændret siden sidste trækning. Kør igen for at opdatere.
 						</p>
 					)}
 
@@ -255,11 +257,10 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 						confirmingStartOver ? (
 							<div className="flex flex-wrap items-center gap-2">
 								<span className="text-sm">
-									Start a new draw? Everyone's match will change, including any they've already
-									seen.
+									Start en ny trækning? Alles match vil ændres, også selvom de allerede har set den.
 								</span>
 								<Button type="button" behaviour="destructive" onClick={() => runDraft(true)}>
-									Start over
+									Start forfra
 								</Button>
 								<Button
 									type="button"
@@ -275,7 +276,7 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 								behaviour="neutral"
 								onClick={() => setConfirmingStartOver(true)}
 							>
-								Start a new draw
+								Start en ny trækning
 							</Button>
 						)
 					) : (
@@ -285,7 +286,7 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 							disabled={isLocking}
 							onClick={() => void lockDraw()}
 						>
-							{isLocking ? "Locking in…" : "Lock in this match"}
+							{isLocking ? "Låser…" : "Lås denne trækning"}
 						</Button>
 					)}
 				</div>

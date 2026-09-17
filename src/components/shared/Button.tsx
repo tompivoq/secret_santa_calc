@@ -42,3 +42,31 @@ export const Button = ({ className, behaviour = "neutral", ...props }: ButtonPro
 		/>
 	);
 };
+
+interface SaveButtonProps {
+	isLoading: boolean;
+	isFormValid: boolean;
+}
+export const SaveButton = ({ isLoading, isFormValid }: SaveButtonProps) => (
+	<Button type="submit" behaviour="action" disabled={!isFormValid || isLoading}>
+		{isLoading ? "Gemmer..." : "Gem ændringer"}
+	</Button>
+);
+
+interface CancelButtonProps {
+	onCancel: () => void;
+}
+export const CancelButton = ({ onCancel }: CancelButtonProps) => (
+	<Button type="button" behaviour="neutral" onClick={onCancel}>
+		Fortryd
+	</Button>
+);
+
+type FormActionButtonsProps = SaveButtonProps & CancelButtonProps;
+
+export const FormActionButtons = ({ onCancel, isFormValid, isLoading }: FormActionButtonsProps) => (
+	<div className="flex flex-row justify-end gap-2">
+		<CancelButton onCancel={onCancel} />
+		<SaveButton isLoading={isLoading} isFormValid={isFormValid} />
+	</div>
+);

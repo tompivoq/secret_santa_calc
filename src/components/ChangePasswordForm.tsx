@@ -63,7 +63,7 @@ function ChangePasswordForm({ onSuccess, intro }: ChangePasswordFormProps = {}) 
 			);
 			onSuccess?.();
 		} catch {
-			setError("root", { message: "Current password is incorrect" });
+			setError("root", { message: "Nuværende password er forkert" });
 		}
 	};
 
@@ -74,19 +74,19 @@ function ChangePasswordForm({ onSuccess, intro }: ChangePasswordFormProps = {}) 
 			<p className="text-sm">
 				{intro ??
 					(requiresCurrent
-						? "This is your first time logging in — please set a new password."
-						: "Pick a password, so you can also log in without a link next time.")}
+						? "Indstil et nyt password"
+						: "Vælg venligst et password, så du kan logge ind senere uden et link")}
 			</p>
 
 			{requiresCurrent && (
 				<div className="flex flex-col gap-1">
 					<label htmlFor="currentPassword" className="text-sm font-semibold">
-						Current password
+						Nuværende password
 					</label>
 					<input
 						id="currentPassword"
 						type="password"
-						{...register("currentPassword", { required: "Required" })}
+						{...register("currentPassword", { required: "Krævet" })}
 						className={inputClasses(!!errors.currentPassword)}
 					/>
 					{errors.currentPassword && (
@@ -99,14 +99,14 @@ function ChangePasswordForm({ onSuccess, intro }: ChangePasswordFormProps = {}) 
 
 			<div className="flex flex-col gap-1">
 				<label htmlFor="newPassword" className="text-sm font-semibold">
-					New password
+					Nyt password
 				</label>
 				<input
 					id="newPassword"
 					type="password"
 					{...register("newPassword", {
-						required: "Required",
-						minLength: { value: 8, message: "At least 8 characters" },
+						required: "Påkrævet",
+						minLength: { value: 8, message: "Mindst 8 tegn" },
 					})}
 					className={inputClasses(!!errors.newPassword)}
 				/>
@@ -119,15 +119,15 @@ function ChangePasswordForm({ onSuccess, intro }: ChangePasswordFormProps = {}) 
 
 			<div className="flex flex-col gap-1">
 				<label htmlFor="confirmNewPassword" className="text-sm font-semibold">
-					Confirm new password
+					Bekræft nyt password
 				</label>
 				<input
 					id="confirmNewPassword"
 					type="password"
 					{...register("confirmNewPassword", {
-						required: "Required",
+						required: "Påkrævet",
 						validate: (value, formValues) =>
-							value === formValues.newPassword || "Passwords don't match",
+							value === formValues.newPassword || "Passwords matcher ikke",
 					})}
 					className={inputClasses(!!errors.confirmNewPassword)}
 				/>
@@ -147,7 +147,7 @@ function ChangePasswordForm({ onSuccess, intro }: ChangePasswordFormProps = {}) 
 				disabled={!isValid || isLoading}
 				className="cursor-pointer self-start rounded-md border border-gray-700 px-4 py-2 text-base hover:bg-gray-100 disabled:opacity-50 dark:border-gray-300 dark:hover:bg-gray-800"
 			>
-				Set password
+				Sæt nyt password
 			</button>
 		</form>
 	);

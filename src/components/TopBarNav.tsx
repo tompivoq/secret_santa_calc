@@ -67,22 +67,21 @@ export const TopBarNav = () => {
 				<nav className="my-4 hidden flex-1 justify-end text-base md:flex">
 					{isSignedIn && (
 						<>
-							<div id="page_nav" className="flex items-center-safe gap-4 px-4">
-								{me.person.isAdmin && (
+							{me.person.isAdmin && (
+								<div id="page_nav" className="flex items-center-safe gap-4 px-4">
 									<Link to="/" className="underline hover:no-underline">
-										Manage people
+										Deltagere
 									</Link>
-								)}
-								<Link to="/account" className="underline hover:no-underline">
-									My account
-								</Link>
-							</div>
+									<Link to="/account" className="underline hover:no-underline">
+										Min side
+									</Link>
+								</div>
+							)}
 							<div id="user" className="flex flex-col items-center self-end-safe px-2">
-								<p className="text-sm">
-									Signed in as <span className="font-semibold">{me.person.name}</span>
-								</p>
+								<span className="text-sm">Logget ind som</span>
+								<span className="font-semibold">{me.person.name}</span>
 								<Button onClick={() => logout()} behaviour="action">
-									Log out
+									Log ud
 								</Button>
 							</div>
 						</>
@@ -92,27 +91,27 @@ export const TopBarNav = () => {
 
 			{isSignedIn && menuOpen && (
 				<nav className="mx-auto flex w-full max-w-2xl flex-col items-start gap-4 px-4 pb-4 text-base md:hidden">
-					<div id="page_nav" className="flex flex-col gap-3">
-						{me.person.isAdmin && (
+					{me.person.isAdmin && (
+						<div id="page_nav" className="flex flex-col gap-3">
 							<Link
 								to="/"
 								className="underline hover:no-underline"
 								onClick={() => setMenuOpen(false)}
 							>
-								Manage people
+								Deltagere
 							</Link>
-						)}
-						<Link
-							to="/account"
-							className="underline hover:no-underline"
-							onClick={() => setMenuOpen(false)}
-						>
-							My account
-						</Link>
-					</div>
+							<Link
+								to="/account"
+								className="underline hover:no-underline"
+								onClick={() => setMenuOpen(false)}
+							>
+								Min side
+							</Link>
+						</div>
+					)}
 					<div id="user" className="flex flex-col items-start gap-1">
 						<p className="text-sm">
-							Signed in as <span className="font-semibold">{me.person.name}</span>
+							Logget ind som <span className="font-semibold">{me.person.name}</span>
 						</p>
 						<Button
 							onClick={() => {
@@ -121,7 +120,7 @@ export const TopBarNav = () => {
 							}}
 							behaviour="action"
 						>
-							Log out
+							Log ud
 						</Button>
 					</div>
 				</nav>

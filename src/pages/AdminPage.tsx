@@ -34,18 +34,16 @@ function AdminPage() {
 
 	return (
 		<>
-			<p>Enter a list of people and randomly assign each one a secret santa.</p>
-
-			<div className="flex h-fit flex-col rounded-xl border border-gray-400 p-5">
+			<div className="flex h-fit flex-col rounded-xl border border-gray-400">
 				<div
-					className="flex cursor-pointer flex-row items-center"
+					className="flex cursor-pointer flex-row items-center rounded-t-xl border p-5"
 					onClick={() => setFormOpen((prev) => !prev)}
 				>
 					<FaChevronRight
 						data-active={formOpen}
 						className="mr-2 size-3 transition-transform duration-300 ease-in-out data-[active=true]:rotate-90"
 					/>
-					<h3 className="flex grow text-lg">Add people</h3>
+					<h3 className="flex grow text-lg">Tilføj person</h3>
 				</div>
 				{formOpen && <PersonForm />}
 			</div>

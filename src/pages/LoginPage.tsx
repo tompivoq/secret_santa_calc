@@ -51,7 +51,7 @@ function LoginPage() {
 			);
 			navigate("/account");
 		} catch {
-			setError("root", { message: "Incorrect email or password" });
+			setError("root", { message: "Forkert email eller password" });
 		}
 	};
 
@@ -62,7 +62,8 @@ function LoginPage() {
 				// followed, or has expired. Without this it would look like an
 				// ordinary trip to the login page, for no apparent reason.
 				<p className="text-left text-sm text-red-600 dark:text-red-400">
-					That login link has already been used or has expired. Ask for a new one, or log in below.
+					Dit link er allerede blevet brugt, eller er udløbet. Enten bed om et nyt fra admin, eller
+					log ind herunder.
 				</p>
 			)}
 			<form
@@ -71,13 +72,13 @@ function LoginPage() {
 			>
 				<div className="flex flex-col gap-1">
 					<label htmlFor="email" className="text-sm font-semibold">
-						Email
+						E-mail
 					</label>
 					<input
 						id="email"
 						type="email"
 						placeholder="name@example.com"
-						{...register("email", { required: "Email is required" })}
+						{...register("email", { required: "Email er påkrævet" })}
 						className={inputClasses(!!errors.email)}
 					/>
 					{errors.email && (
@@ -92,7 +93,7 @@ function LoginPage() {
 					<input
 						id="password"
 						type="password"
-						{...register("password", { required: "Password is required" })}
+						{...register("password", { required: "Password er påkrævet" })}
 						className={inputClasses(!!errors.password)}
 					/>
 					{errors.password && (
@@ -111,7 +112,7 @@ function LoginPage() {
 					disabled={!isValid || isLoading}
 					className="cursor-pointer self-start rounded-md border border-gray-700 px-4 py-2 text-base hover:bg-gray-100 disabled:opacity-50 dark:border-gray-300 dark:hover:bg-gray-800"
 				>
-					Log in
+					Log ind
 				</button>
 			</form>
 		</div>

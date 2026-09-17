@@ -44,16 +44,16 @@ export const PersonList = ({
 	return (
 		<div className="border-t-metallic-gold-400 mt-4 flex flex-col border-t p-4">
 			<div className="flex flex-wrap items-center justify-between gap-2">
-				<h3 className="text-left text-lg">Currently added people</h3>
+				<h3 className="text-left text-lg">Nuværende brugere/deltagere</h3>
 				<div className="flex items-center gap-3 text-sm">
 					<span>
-						{selectedIds.size} of {people.length} selected
+						{selectedIds.size} af {people.length} valgt
 					</span>
 					<button type="button" onClick={onSelectAll} className="underline hover:no-underline">
-						Select all
+						Vælg alle
 					</button>
 					<button type="button" onClick={onSelectNone} className="underline hover:no-underline">
-						Select none
+						Vælg ingen
 					</button>
 				</div>
 			</div>

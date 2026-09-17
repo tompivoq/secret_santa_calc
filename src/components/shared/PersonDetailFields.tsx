@@ -53,13 +53,13 @@ export const PersonDetailFields = <T extends PersonDetailValues>({
 		<>
 			<div className="flex w-full flex-col gap-1">
 				<label htmlFor={`${idPrefix}name`} className="text-sm font-semibold">
-					Name
+					Navn
 				</label>
 				<input
 					id={`${idPrefix}name`}
 					type="text"
-					placeholder="Full name"
-					{...register(field("name"), { required: "A name is required" })}
+					placeholder="Navn"
+					{...register(field("name"), { required: "En person skal have et navn" })}
 					className={inputClasses(!!fieldErrors.name)}
 				/>
 				{fieldErrors.name && (
@@ -72,17 +72,17 @@ export const PersonDetailFields = <T extends PersonDetailValues>({
 			<div className="flex w-full flex-col justify-between gap-4 md:flex-row">
 				<div className="flex w-full flex-col gap-1">
 					<label htmlFor={`${idPrefix}email`} className="text-sm font-semibold">
-						Email
+						E-mail
 					</label>
 					<input
 						id={`${idPrefix}email`}
 						type="email"
 						placeholder="name@example.com"
 						{...register(field("email"), {
-							required: "You need to input a valid email",
+							required: "En gyldig e-mail er krævet",
 							pattern: {
 								value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-								message: "Please enter a valid email address",
+								message: "Skriv venligst en gyldig e-mail adresse",
 							},
 						})}
 						className={inputClasses(!!fieldErrors.email)}
@@ -99,7 +99,7 @@ export const PersonDetailFields = <T extends PersonDetailValues>({
 
 				<div className="flex w-full flex-col gap-1">
 					<label htmlFor={`${idPrefix}phone`} className="text-sm font-semibold">
-						Phone
+						Telefon-nummer
 					</label>
 					<input
 						id={`${idPrefix}phone`}
@@ -107,9 +107,11 @@ export const PersonDetailFields = <T extends PersonDetailValues>({
 						pattern="[0-9]{8}"
 						placeholder="74551212"
 						{...register(field("phone"), {
-							required: "A phone number is required",
+							required: "Et telefon-nummer er påkrævet",
 							valueAsNumber: true,
-							validate: (value) => isPhoneNumber(value) || "Not a valid phonenumber",
+							validate: (value) =>
+								isPhoneNumber(value) ||
+								"Ikke et gyldigt dansk telefonnummer. 8 tal, uden landekode.",
 						})}
 						className={inputClasses(!!fieldErrors.phone)}
 					/>

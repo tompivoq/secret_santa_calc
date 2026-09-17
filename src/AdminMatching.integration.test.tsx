@@ -177,7 +177,7 @@ const assignmentLineFor = (giver: string) =>
  * the tests about a draw nobody — the admin included — gets to see.
  */
 const makeItTheRealDraw = (user: ReturnType<typeof userEvent.setup>) =>
-	user.click(screen.getByLabelText("Test-run (show matches when done)"));
+	user.click(screen.getByLabelText("Test-kørsel"));
 
 describe("running a match from the admin page", () => {
 	it("defaults to a test run, which shows the pairings", async () => {
@@ -185,8 +185,8 @@ describe("running a match from the admin page", () => {
 		const user = userEvent.setup();
 		renderAdminPage();
 
-		await screen.findByText("3 of 3 selected");
-		await user.click(screen.getByRole("button", { name: /Run match/ }));
+		await screen.findByText("3 af 3 valgt");
+		await user.click(screen.getByRole("button", { name: /Kør lodtrækning/ }));
 
 		expect(await assignmentLineFor("Anna")).not.toBeNull();
 		expect(await assignmentLineFor("Bjørn")).not.toBeNull();
@@ -199,16 +199,16 @@ describe("running a match from the admin page", () => {
 		const user = userEvent.setup();
 		renderAdminPage();
 
-		await screen.findByText("3 of 3 selected");
+		await screen.findByText("3 af 3 valgt");
 		await makeItTheRealDraw(user);
-		await user.click(screen.getByRole("button", { name: /Run match/ }));
+		await user.click(screen.getByRole("button", { name: /Kør lodtrækning/ }));
 
 		// Says who took part...
-		await screen.findByText("3 people");
+		await screen.findByText("3 deltagere");
 		expect(screen.getByText(/Anna, Bjørn, Carl/)).not.toBeNull();
 		// ...but not a single pairing, since the admin takes part too.
 		expect(screen.queryByText(/ → /)).toBeNull();
-		expect(screen.getByText(/Who drew whom is hidden/)).not.toBeNull();
+		expect(screen.getByText(/Resultatet vil være skjult/)).not.toBeNull();
 	});
 
 	it("asks the server to hide them, rather than just not rendering them", async () => {
@@ -216,10 +216,10 @@ describe("running a match from the admin page", () => {
 		const user = userEvent.setup();
 		renderAdminPage();
 
-		await screen.findByText("3 of 3 selected");
+		await screen.findByText("3 af 3 valgt");
 		await makeItTheRealDraw(user);
-		await user.click(screen.getByRole("button", { name: /Run match/ }));
-		await screen.findByText("3 people");
+		await user.click(screen.getByRole("button", { name: /Kør lodtrækning/ }));
+		await screen.findByText("3 deltagere");
 
 		// The distinction that matters: hiding is the server's job, so the
 		// pairings aren't sitting in the network tab waiting to be read.
@@ -231,9 +231,9 @@ describe("running a match from the admin page", () => {
 		const user = userEvent.setup();
 		renderAdminPage();
 
-		await user.click(await screen.findByLabelText(`Include ${CARL.name} in the next match`));
-		await screen.findByText("2 of 3 selected");
-		await user.click(screen.getByRole("button", { name: /Run match/ }));
+		await user.click(await screen.findByLabelText(`Inkluder ${CARL.name} i næste lodtrækning`));
+		await screen.findByText("2 af 3 valgt");
+		await user.click(screen.getByRole("button", { name: /Kør lodtrækning/ }));
 
 		await assignmentLineFor("Anna");
 		expect(drafted).toHaveLength(1);
@@ -245,10 +245,10 @@ describe("running a match from the admin page", () => {
 		const user = userEvent.setup();
 		renderAdminPage();
 
-		await user.click(await screen.findByRole("button", { name: "Select none" }));
-		await user.click(screen.getByLabelText(`Include ${ANNA.name} in the next match`));
+		await user.click(await screen.findByRole("button", { name: "Vælg ingen" }));
+		await user.click(screen.getByLabelText(`Inkluder ${ANNA.name} i næste lodtrækning`));
 
-		const button = screen.getByRole("button", { name: /Run match/ }) as HTMLButtonElement;
+		const button = screen.getByRole("button", { name: /Kør lodtrækning/ }) as HTMLButtonElement;
 		expect(button.disabled).toBe(true);
 	});
 
@@ -262,10 +262,10 @@ describe("running a match from the admin page", () => {
 		const user = userEvent.setup();
 		renderAdminPage();
 
-		await screen.findByText("2 of 2 selected");
-		await user.click(screen.getByRole("button", { name: /Run match/ }));
+		await screen.findByText("2 af 2 valgt");
+		await user.click(screen.getByRole("button", { name: /Kør lodtrækning/ }));
 
-		await screen.findByText(/No valid match exists for the selected people/);
+		await screen.findByText(/Ingen gyldig lodtrækning fundet for de valgte deltagere/);
 	});
 });
 
@@ -275,21 +275,21 @@ describe("locking a draft in", () => {
 		const user = userEvent.setup();
 		renderAdminPage();
 
-		await screen.findByText("3 of 3 selected");
-		await user.click(screen.getByRole("button", { name: /Run match/ }));
+		await screen.findByText("3 af 3 valgt");
+		await user.click(screen.getByRole("button", { name: /Kør lodtrækning/ }));
 		await assignmentLineFor("Anna");
 
 		// While it's a draft: re-rollable, and explicitly not final.
-		expect(screen.getByText(/Nothing is final until you lock it in/)).not.toBeNull();
+		expect(screen.getByText(/Intet er endeligt før du låser lodtrækningen fast/)).not.toBeNull();
 		expect(screen.getByRole("button", { name: /Re-roll/ })).not.toBeNull();
 
-		await user.click(screen.getByRole("button", { name: "Lock in this match" }));
+		await user.click(screen.getByRole("button", { name: "Lås denne trækning" }));
 
 		// Once locked: no re-roll, and starting over is offered instead.
-		await screen.findByText(/Locked in on/);
+		await screen.findByText(/Låst fast d/);
 		expect(screen.queryByRole("button", { name: /Re-roll/ })).toBeNull();
-		expect(screen.queryByRole("button", { name: "Lock in this match" })).toBeNull();
-		expect(screen.getByRole("button", { name: "Start a new draw" })).not.toBeNull();
+		expect(screen.queryByRole("button", { name: "Lås denne trækning" })).toBeNull();
+		expect(screen.getByRole("button", { name: "Start en ny trækning" })).not.toBeNull();
 	});
 
 	it("asks for confirmation before drawing over a locked result", async () => {
@@ -297,30 +297,30 @@ describe("locking a draft in", () => {
 		const user = userEvent.setup();
 		renderAdminPage();
 
-		await screen.findByText("3 of 3 selected");
-		await user.click(screen.getByRole("button", { name: /Run match/ }));
+		await screen.findByText("3 af 3 valgt");
+		await user.click(screen.getByRole("button", { name: /Kør lodtrækning/ }));
 		await assignmentLineFor("Anna");
-		await user.click(screen.getByRole("button", { name: "Lock in this match" }));
-		await screen.findByText(/Locked in on/);
+		await user.click(screen.getByRole("button", { name: "Lås denne trækning" }));
+		await screen.findByText(/Låst fast d/);
 
-		await user.click(screen.getByRole("button", { name: "Start a new draw" }));
+		await user.click(screen.getByRole("button", { name: "Start en ny trækning" }));
 
 		// Nothing is re-drawn on the first click — it warns first.
-		await screen.findByText(/Everyone's match will change/);
-		expect(screen.getByText(/Locked in on/)).not.toBeNull();
+		await screen.findByText(/Alles match vil ændres/);
+		expect(screen.getByText(/Låst fast d/)).not.toBeNull();
 
 		await user.click(screen.getByRole("button", { name: "Cancel" }));
-		expect(screen.queryByText(/Everyone's match will change/)).toBeNull();
+		expect(screen.queryByText(/Alles match vil ændres/)).toBeNull();
 	});
 });
 
 describe("emailing people their link", () => {
 	const drawAndLock = async (user: ReturnType<typeof userEvent.setup>) => {
-		await screen.findByText("3 of 3 selected");
-		await user.click(screen.getByRole("button", { name: /Run match/ }));
+		await screen.findByText("3 af 3 valgt");
+		await user.click(screen.getByRole("button", { name: /Kør lodtrækning/ }));
 		await assignmentLineFor("Anna");
-		await user.click(screen.getByRole("button", { name: "Lock in this match" }));
-		await screen.findByText(/Locked in on/);
+		await user.click(screen.getByRole("button", { name: "Lås denne trækning" }));
+		await screen.findByText(/Låst fast d/);
 	};
 
 	it("is offered only once the draw is locked in", async () => {
@@ -328,16 +328,18 @@ describe("emailing people their link", () => {
 		const user = userEvent.setup();
 		renderAdminPage();
 
-		await screen.findByText("3 of 3 selected");
-		await user.click(screen.getByRole("button", { name: /Run match/ }));
+		await screen.findByText("3 af 3 valgt");
+		await user.click(screen.getByRole("button", { name: /Kør lodtrækning/ }));
 		await assignmentLineFor("Anna");
 
 		// Still a draft: it can still be re-rolled, so nobody may be told yet.
-		expect(screen.queryByRole("button", { name: /Email the/ })).toBeNull();
+		expect(screen.queryByRole("button", { name: /Send email til de/ })).toBeNull();
 
-		await user.click(screen.getByRole("button", { name: "Lock in this match" }));
+		await user.click(screen.getByRole("button", { name: "Lås denne trækning" }));
 
-		expect(await screen.findByRole("button", { name: /Email the 3 still waiting/ })).not.toBeNull();
+		expect(
+			await screen.findByRole("button", { name: /Send email til de 3 der stadig venter/ }),
+		).not.toBeNull();
 	});
 
 	it("tracks who has been emailed, and offers a resend once everyone has", async () => {
@@ -346,15 +348,15 @@ describe("emailing people their link", () => {
 		renderAdminPage();
 		await drawAndLock(user);
 
-		expect(screen.getByText("0 of 3 have been emailed their link.")).not.toBeNull();
+		expect(screen.getByText("0 ud af 3 har fået tilsendt deres login-link.")).not.toBeNull();
 
-		await user.click(screen.getByRole("button", { name: /Email the 3 still waiting/ }));
+		await user.click(screen.getByRole("button", { name: /Send email til de 3 der stadig venter/ }));
 
-		await screen.findByText("3 of 3 have been emailed their link.");
-		expect(screen.getByText(/Emailed Anna, Bjørn, Carl/)).not.toBeNull();
+		await screen.findByText("3 ud af 3 har fået tilsendt deres login-link.");
+		expect(screen.getByText(/Sendte email til Anna, Bjørn, Carl/)).not.toBeNull();
 		// Nobody left waiting, so the offer changes to resending.
-		expect(screen.queryByRole("button", { name: /still waiting/ })).toBeNull();
-		expect(screen.getByRole("button", { name: /Send everyone their link again/ })).not.toBeNull();
+		expect(screen.queryByRole("button", { name: /stadig venter/ })).toBeNull();
+		expect(screen.getByRole("button", { name: /Send alle deres link igen/ })).not.toBeNull();
 	});
 
 	it("names the people whose emails failed, rather than just counting them", async () => {
@@ -372,11 +374,11 @@ describe("emailing people their link", () => {
 		renderAdminPage();
 		await drawAndLock(user);
 
-		await user.click(screen.getByRole("button", { name: /Email the 3 still waiting/ }));
+		await user.click(screen.getByRole("button", { name: /Send email til de 3 der stadig venter/ }));
 
 		// The admin has to know who to chase; a count alone wouldn't say.
 		await screen.findByText(/Bjørn — Domain is not verified/);
-		expect(screen.getByText(/couldn't be emailed/)).not.toBeNull();
+		expect(screen.getByText(/Kunne ikke sende til disse deltagere/)).not.toBeNull();
 	});
 });
 
@@ -386,13 +388,13 @@ describe("a draw that's already been run", () => {
 		const user = userEvent.setup();
 		const { unmount } = renderAdminPage();
 
-		await screen.findByText("3 of 3 selected");
+		await screen.findByText("3 af 3 valgt");
 		// The real draw, so there's something hidden to still be hidden after.
 		await makeItTheRealDraw(user);
-		await user.click(screen.getByRole("button", { name: /Run match/ }));
-		await screen.findByText("3 people");
-		await user.click(screen.getByRole("button", { name: "Lock in this match" }));
-		await screen.findByText(/Locked in on/);
+		await user.click(screen.getByRole("button", { name: /Kør lodtrækning/ }));
+		await screen.findByText("3 deltagere");
+		await user.click(screen.getByRole("button", { name: "Lås denne trækning" }));
+		await screen.findByText(/Låst fast d/);
 
 		// A fresh store, as if the page had been reloaded: the draw is the
 		// server's, not something held in component state.
@@ -400,10 +402,10 @@ describe("a draw that's already been run", () => {
 		cleanup();
 		renderAdminPage();
 
-		await screen.findByText(/Locked in on/);
-		expect(await screen.findByText("3 people")).not.toBeNull();
+		await screen.findByText(/Låst fast d/);
+		expect(await screen.findByText("3 deltagere")).not.toBeNull();
 		// Still hidden after the reload — blindness is a property of the
 		// stored draw, not of the click that happened to create it.
-		expect(screen.getByText(/Who drew whom is hidden/)).not.toBeNull();
+		expect(screen.getByText(/Resultatet vil være skjult/)).not.toBeNull();
 	});
 });
