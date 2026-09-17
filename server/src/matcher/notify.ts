@@ -1,16 +1,15 @@
 import { eq } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { assignments } from "../db/schema.js";
-import { issueMagicToken } from "../auth/magic.js";
 import { matchReadyEmail } from "../mail/matchEmail.js";
 import type { Mailer } from "../mail/mailer.js";
+import { sendLoginLinks, type SendLoginLinksResult } from "../mail/loginLinks.js";
 import { getPeopleByIds } from "../people/people.js";
 import { getLatestLockedDraw } from "./draws.js";
 
 export interface NotifyResult {
-	notified: { personId: number; name: string }[];
-	/** Per person, because one bad address must not decide the rest of the family's fate. */
-	failed: { personId: number; name: string; error: string }[];
+	notified: SendLoginLinksResult["sent"];
+	failed: SendLoginLinksResult["failed"];
 }
 
 export interface NotifyOptions {
@@ -46,60 +45,28 @@ export const notifyParticipants = async (
 			? draw.assignments.filter((assignment) => assignment.notifiedAt === null)
 			: draw.assignments.filter((assignment) => options.personIds!.includes(assignment.giverId));
 
+	const assignmentIdByGiver = new Map(
+		targets.map((assignment) => [assignment.giverId, assignment.id]),
+	);
+	// Ordered as the draw is, not as the lookup happens to return them.
 	const peopleById = new Map(
-		getPeopleByIds(
-			db,
-			targets.map((assignment) => assignment.giverId),
-		).map((person) => [person.id, person]),
+		getPeopleByIds(db, [...assignmentIdByGiver.keys()]).map((person) => [person.id, person]),
+	);
+	const recipients = targets.flatMap((assignment) => peopleById.get(assignment.giverId) ?? []);
+
+	const { sent, failed } = await sendLoginLinks(
+		{ db, mailer, authSecret, appBaseUrl },
+		recipients,
+		matchReadyEmail,
+		(person) =>
+			db
+				.update(assignments)
+				.set({ notifiedAt: new Date() })
+				.where(eq(assignments.id, assignmentIdByGiver.get(person.id)!))
+				.run(),
 	);
 
-	const result: NotifyResult = { notified: [], failed: [] };
-
-	// Sequential rather than Promise.all: this is a handful of relatives, and
-	// a provider rate-limiting a burst would turn a slow send into a failed one.
-	for (const assignment of targets) {
-		const person = peopleById.get(assignment.giverId);
-		if (!person) {
-			continue;
-		}
-
-		try {
-			const token = await issueMagicToken(db, person.id, authSecret);
-			if (token === null) {
-				throw new Error(
-					"Personen har ingen login-oplysninger, så der kunne ikke laves et login-link",
-				);
-			}
-
-			await mailer.send({
-				to: person.email,
-				...matchReadyEmail({
-					name: person.name,
-					loginUrl: `${appBaseUrl}/api/auth/magic/${token}`,
-				}),
-			});
-
-			// Only after the send actually succeeded — marking first would let a
-			// failed send masquerade as a delivered one and be skipped forever after.
-			db.update(assignments)
-				.set({ notifiedAt: new Date() })
-				.where(eq(assignments.id, assignment.id))
-				.run();
-			result.notified.push({ personId: person.id, name: person.name });
-		} catch (error) {
-			result.failed.push({
-				personId: person.id,
-				name: person.name,
-				// Shown to the admin as-is next to the person's name, so it's in
-				// Danish where it's ours to write. A rejected send passes through
-				// the mailer's message instead, which includes the provider's own
-				// (English) explanation — see mail/mailer.ts.
-				error: error instanceof Error ? error.message : "Ukendt fejl",
-			});
-		}
-	}
-
-	return result;
+	return { notified: sent, failed };
 };
 
 /** How many people in the locked draw are still waiting to be told. */

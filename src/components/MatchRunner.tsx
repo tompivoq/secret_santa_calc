@@ -8,6 +8,7 @@ import {
 	type Draw,
 } from "../store/matcherApi";
 import { Button } from "./shared/Button";
+import { SendOutcome } from "./shared/SendOutcome";
 
 interface MatchRunnerProps {
 	selectedIds: Set<number>;
@@ -111,32 +112,7 @@ const NotifyPanel = ({ draw, nameById }: { draw: Draw; nameById: Map<number, str
 				</div>
 			)}
 
-			{error && (
-				<p className="text-sm text-red-600 dark:text-red-400">
-					Kunne ikke sende mails. Prøv venligst igen.
-				</p>
-			)}
-
-			{result && result.notified.length > 0 && (
-				<p className="text-sm">
-					Sendte email til {result.notified.map((person) => person.name).join(", ")}.
-				</p>
-			)}
-
-			{result && result.failed.length > 0 && (
-				<div className="text-sm text-red-600 dark:text-red-400">
-					{/* Named individually: the admin has to know who to chase, and a
-					    count alone wouldn't tell them. */}
-					<p>Kunne ikke sende til disse deltagere. De vil blive forsøgt igen næste gang:</p>
-					<ul className="mt-1 flex flex-col gap-1">
-						{result.failed.map((person) => (
-							<li key={person.personId}>
-								{person.name} — {person.error}
-							</li>
-						))}
-					</ul>
-				</div>
-			)}
+			<SendOutcome sent={result?.notified} failed={result?.failed} hasError={!!error} />
 		</div>
 	);
 };
