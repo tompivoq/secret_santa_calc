@@ -78,8 +78,7 @@ const NotifyPanel = ({ draw, nameById }: { draw: Draw; nameById: Map<number, str
 	return (
 		<div className="border-blue-spruce-400 flex flex-col gap-2 border-t pt-3">
 			<p className="text-sm">
-				{draw.notifiedIds.length} ud af {draw.participantIds.length} har fået tilsendt deres
-				login-link.
+				{draw.notifiedIds.length} ud af {draw.participantIds.length} har fået besked.
 			</p>
 
 			{waiting.length > 0 ? (
@@ -153,7 +152,7 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 
 			{isLocked ? (
 				<p className="text-sm">
-					Låst fast d. {new Date(currentDraw.lockedAt!).toLocaleDateString()}. Alle kan se deres
+					Låst fast d. {new Date(currentDraw.lockedAt!).toLocaleDateString("da")}. Alle kan se deres
 					egen match!
 				</p>
 			) : (

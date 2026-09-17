@@ -37,7 +37,7 @@ function AdminPage() {
 		<>
 			<div className="flex h-fit flex-col rounded-xl border border-gray-400">
 				<div
-					className="flex cursor-pointer flex-row items-center rounded-t-xl border p-5"
+					className="flex cursor-pointer flex-row items-center rounded-xl p-5"
 					onClick={() => setFormOpen((prev) => !prev)}
 				>
 					<FaChevronRight

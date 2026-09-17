@@ -11,7 +11,7 @@ const loginStatus = (person: Person): string => {
 		return "Logget ind";
 	}
 	if (person.invitedAt) {
-		return `Inviteret d. ${new Date(person.invitedAt).toLocaleDateString()}`;
+		return `Inviteret d. ${new Date(person.invitedAt).toLocaleDateString("da")}`;
 	}
 	return "Ikke inviteret";
 };

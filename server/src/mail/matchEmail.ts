@@ -20,28 +20,31 @@ export interface MatchEmailInput {
  * carries them to it.
  */
 export const matchReadyEmail = ({ name, loginUrl }: MatchEmailInput): Omit<MailMessage, "to"> => {
-	const subject = "Your Secret Santa match is ready";
+	const subject = "Dit julegave-match er klar!";
 
 	const text = [
-		`Hi ${name},`,
+		`Hej ${name},`,
 		"",
-		"The Secret Santa draw has been made, and yours is waiting for you.",
+		"Nisserne har nu gennemført lodtrækningen til dette års julegave-givning,",
+		"og har fundet ud af hvem der skal give gave til hvem!",
 		"",
-		"Open this link to see who you're giving to:",
+		"Du kan se hvem du er blevet tildelt via dette link:",
 		loginUrl,
 		"",
-		"The link logs you in on its own, so there's no password to remember.",
-		"It works once, and only for you — don't forward it to anyone.",
+		"Hvis du ikke allerede har været inde og oprette et password, vil du som det første blive bedt om at lave det.",
 		"",
-		"God jul!",
+		"God jul, og god fornøjelse",
+		"Julenissen",
 	].join("\n");
 
 	const html = [
-		`<p>Hi ${escapeHtml(name)},</p>`,
-		"<p>The Secret Santa draw has been made, and yours is waiting for you.</p>",
-		`<p><a href="${escapeHtml(loginUrl)}">See who you're giving to</a></p>`,
-		"<p>The link logs you in on its own, so there's no password to remember. It works once, and only for you — don't forward it to anyone.</p>",
-		"<p>God jul!</p>",
+		`<p>Hej ${escapeHtml(name)},</p>`,
+		"<p>Nisserne har nu gennemført lodtrækningen til dette års julegave-givning, og har fundet ud af hvem der skal give gave til hvem!</p>",
+		"<p>Du kan se hvem du er blevet tildelt via dette link:</p>",
+		`<p><a href="${escapeHtml(loginUrl)}">Se hvem du skal give gave til</a></p>`,
+		"<p>Hvis du ikke allerede har været inde og oprette et password, vil du som det første blive bedt om at lave det.</p>",
+		"<p>God jul, og god fornøjelse</p>",
+		"<p>Julenissen</p>",
 	].join("\n");
 
 	return { subject, text, html };

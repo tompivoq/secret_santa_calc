@@ -348,11 +348,11 @@ describe("emailing people their link", () => {
 		renderAdminPage();
 		await drawAndLock(user);
 
-		expect(screen.getByText("0 ud af 3 har fået tilsendt deres login-link.")).not.toBeNull();
+		expect(screen.getByText("0 ud af 3 har fået besked.")).not.toBeNull();
 
 		await user.click(screen.getByRole("button", { name: /Send email til de 3 der stadig venter/ }));
 
-		await screen.findByText("3 ud af 3 har fået tilsendt deres login-link.");
+		await screen.findByText("3 ud af 3 har fået besked.");
 		expect(screen.getByText(/Sendte email til Anna, Bjørn, Carl/)).not.toBeNull();
 		// Nobody left waiting, so the offer changes to resending.
 		expect(screen.queryByRole("button", { name: /stadig venter/ })).toBeNull();
