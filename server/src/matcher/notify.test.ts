@@ -4,9 +4,9 @@ import { eq } from "drizzle-orm";
 import { createApp } from "../app.js";
 import { createDb, type Db } from "../db/client.js";
 import { migrationsFolder } from "../db/migrate.js";
-import { people } from "../db/schema.js";
+import { credentials, people } from "../db/schema.js";
 import { addPerson, type CreatedPerson } from "../people/people.js";
-import { consumeMagicToken } from "../auth/magic.js";
+import { consumeMagicToken, issueMagicToken } from "../auth/magic.js";
 import type { MailMessage, Mailer } from "../mail/mailer.js";
 import { lockDraft, saveDraft } from "./draws.js";
 import { countUnnotified, notifyParticipants } from "./notify.js";
@@ -23,6 +23,14 @@ beforeEach(() => {
 
 const seed = (name: string): CreatedPerson =>
 	addPerson(db, { name, email: `${name.toLowerCase()}@example.com`, phone: 22334455 });
+
+/** As if they'd logged in and replaced their initial password. */
+const markPasswordChosen = (personId: number) =>
+	db
+		.update(credentials)
+		.set({ mustChangePassword: false })
+		.where(eq(credentials.personId, personId))
+		.run();
 
 /** Collects what would have been sent, and can be told to fail for one address. */
 const fakeMailer = (failFor: string[] = []) => {
@@ -79,6 +87,36 @@ describe("notifying participants", () => {
 		expect(link.startsWith(`${BASE_URL}/api/auth/magic/`)).toBe(true);
 		const token = link.slice(`${BASE_URL}/api/auth/magic/`.length);
 		expect(await consumeMagicToken(db, token, SECRET)).toBe(anna.id);
+	});
+
+	it("links someone who has already chosen a password to their account page instead", async () => {
+		const { anna, bjorn } = lockATrio();
+		// Anna got in through her invitation; Bjørn never did.
+		const invitationToken = await issueMagicToken(db, anna.id, SECRET);
+		markPasswordChosen(anna.id);
+		const { mailer, sent } = fakeMailer();
+
+		await notifyParticipants(db, mailer, SECRET, BASE_URL, { personIds: [anna.id, bjorn.id] });
+
+		const linkIn = (email: string) =>
+			/https:\/\/\S+/.exec(sent.find((m) => m.to === email)!.text)![0];
+		expect(linkIn(anna.email)).toBe(`${BASE_URL}/account`);
+		expect(sent.find((m) => m.to === anna.email)!.html).toContain(`href="${BASE_URL}/account"`);
+		expect(linkIn(bjorn.email).startsWith(`${BASE_URL}/api/auth/magic/`)).toBe(true);
+		// No link was minted for Anna, so none of hers was invalidated either.
+		expect(await consumeMagicToken(db, invitationToken!, SECRET)).toBe(anna.id);
+	});
+
+	it("still counts a plain account-page link as notified", async () => {
+		const { anna } = lockATrio();
+		markPasswordChosen(anna.id);
+
+		const result = (await notifyParticipants(db, fakeMailer().mailer, SECRET, BASE_URL, {
+			personIds: [anna.id],
+		}))!;
+
+		expect(result.notified.map((n) => n.personId)).toEqual([anna.id]);
+		expect(countUnnotified(db)).toBe(2);
 	});
 
 	it("never names the recipient — that's what the link is for", async () => {

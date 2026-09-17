@@ -22,7 +22,9 @@ export interface NotifyOptions {
 }
 
 /**
- * Emails people a link to their match in the current locked draw.
+ * Emails people a link to their match in the current locked draw: a magic
+ * link for anyone still on their initial password, and a plain link to the
+ * account page for anyone who has chosen their own.
  *
  * Only ever the locked draw: a draft is still free to change, so telling
  * anyone about one would be telling them something that may not happen.
@@ -64,6 +66,9 @@ export const notifyParticipants = async (
 				.set({ notifiedAt: new Date() })
 				.where(eq(assignments.id, assignmentIdByGiver.get(person.id)!))
 				.run(),
+		// Anyone who got in through their invitation already has a password;
+		// only those who never did need a link that logs them in.
+		{ magicLinkOnlyWithoutPassword: true },
 	);
 
 	return { notified: sent, failed };

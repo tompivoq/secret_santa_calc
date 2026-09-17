@@ -109,6 +109,9 @@ describe("inviting people", () => {
 
 		expect(result.invited.map((p) => p.personId)).toEqual([anna.id]);
 		expect(sent.map((m) => m.to)).toEqual([anna.email]);
+		// Still a magic link, even though she has a password — a fresh
+		// invitation is also how someone who forgot theirs gets back in.
+		expect(sent[0]!.text).toContain(`${BASE_URL}/api/auth/magic/`);
 	});
 
 	it("reports a failed address, and leaves them waiting so a retry picks them up", async () => {
