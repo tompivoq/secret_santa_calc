@@ -43,8 +43,10 @@ export const createResendMailer = (apiKey: string, from: string): Mailer => ({
 		if (!response.ok) {
 			// Resend puts the reason in the body; without it the caller is left
 			// guessing between a bad key, an unverified domain and a typo'd address.
+			// In Danish because it's shown to the admin as-is; the detail after
+			// the colon is Resend's own wording and stays English.
 			const detail = await response.text().catch(() => "");
-			throw new Error(`Resend rejected the email (${response.status}): ${detail}`);
+			throw new Error(`Resend afviste e-mailen (${response.status}): ${detail}`);
 		}
 	},
 });

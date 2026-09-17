@@ -66,7 +66,9 @@ export const notifyParticipants = async (
 		try {
 			const token = await issueMagicToken(db, person.id, authSecret);
 			if (token === null) {
-				throw new Error("No login credentials to build a link from");
+				throw new Error(
+					"Personen har ingen login-oplysninger, så der kunne ikke laves et login-link",
+				);
 			}
 
 			await mailer.send({
@@ -88,7 +90,11 @@ export const notifyParticipants = async (
 			result.failed.push({
 				personId: person.id,
 				name: person.name,
-				error: error instanceof Error ? error.message : "Unknown error",
+				// Shown to the admin as-is next to the person's name, so it's in
+				// Danish where it's ours to write. A rejected send passes through
+				// the mailer's message instead, which includes the provider's own
+				// (English) explanation — see mail/mailer.ts.
+				error: error instanceof Error ? error.message : "Ukendt fejl",
 			});
 		}
 	}
