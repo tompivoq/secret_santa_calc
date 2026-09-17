@@ -205,7 +205,7 @@ describe("running a match from the admin page", () => {
 
 		// Says who took part...
 		await screen.findByText("3 deltagere");
-		expect(screen.getByText(/Anna, Bjørn, Carl/)).not.toBeNull();
+		expect(screen.getByText(/blev matched: Anna, Bjørn, Carl/)).not.toBeNull();
 		// ...but not a single pairing, since the admin takes part too.
 		expect(screen.queryByText(/ → /)).toBeNull();
 		expect(screen.getByText(/Resultatet vil være skjult/)).not.toBeNull();

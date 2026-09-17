@@ -22,6 +22,17 @@ export interface CreatedPerson extends Person {
 	initialPassword: string;
 }
 
+export interface InviteRequest {
+	/** Omitted invites everyone still waiting for one; naming people re-sends to those. */
+	personIds?: number[];
+}
+
+export interface InviteResult {
+	invited: { personId: number; name: string }[];
+	/** Per person: one bad address doesn't stop the rest going out. */
+	failed: { personId: number; name: string; error: string }[];
+}
+
 export const peopleApi = createApi({
 	reducerPath: "peopleApi",
 	// Resolved against the current origin rather than left as a bare "/api":
@@ -52,6 +63,11 @@ export const peopleApi = createApi({
 			query: ({ id, ...body }) => ({ url: `people/${id}`, method: "PATCH", body }),
 			invalidatesTags: ["People"],
 		}),
+		// Refetches the list afterwards, since that's where invitedAt is shown.
+		invitePeople: builder.mutation<InviteResult, InviteRequest>({
+			query: (body) => ({ url: "people/invite", method: "POST", body }),
+			invalidatesTags: ["People"],
+		}),
 	}),
 });
 
@@ -60,4 +76,5 @@ export const {
 	useAddPersonMutation,
 	useRemovePersonMutation,
 	useUpdatePersonMutation,
+	useInvitePeopleMutation,
 } = peopleApi;

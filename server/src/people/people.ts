@@ -1,9 +1,34 @@
 import { eq, inArray } from "drizzle-orm";
 import type { Db, Tx } from "../db/client.js";
-import { people, type NewPersonRow, type PersonRow } from "../db/schema.js";
+import { credentials, people, type NewPersonRow, type PersonRow } from "../db/schema.js";
 import { createInitialCredentials } from "../auth/service.js";
 
 export const listPeople = (db: Db) => db.select().from(people).all();
+
+export interface ListedPerson extends PersonRow {
+	/**
+	 * Whether they've got in and replaced the password they were created
+	 * with — the thing an invitation is for, so the admin can see who still
+	 * hasn't, whether or not they were invited.
+	 */
+	hasChosenPassword: boolean;
+}
+
+/**
+ * Everyone, as the admin's list shows them: with their login status
+ * alongside. Kept apart from listPeople, which is also what a person's own
+ * session is looked up through and has no business carrying this.
+ */
+export const listPeopleWithLoginStatus = (db: Db): ListedPerson[] =>
+	db
+		.select({ person: people, mustChangePassword: credentials.mustChangePassword })
+		.from(people)
+		.leftJoin(credentials, eq(credentials.personId, people.id))
+		.all()
+		.map(({ person, mustChangePassword }) => ({
+			...person,
+			hasChosenPassword: mustChangePassword === false,
+		}));
 
 /**
  * Fetches exactly the given people (in no particular order — may return

@@ -33,7 +33,7 @@ export const createApp = (db: Db, authSecret: string, options: AppOptions = {}) 
 	// block anyone else's page from reading these (cookie-authenticated)
 	// responses — a permissive CORS policy here would hand that back out.
 
-	const people = getPeopleRoutes(db, authSecret);
+	const people = getPeopleRoutes(db, authSecret, { mailer, appBaseUrl });
 	const auth = getAuthRoutes(db, authSecret, appBaseUrl);
 	const matcher = getMatcherRoutes(db, authSecret, { mailer, appBaseUrl });
 

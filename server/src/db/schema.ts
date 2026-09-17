@@ -28,6 +28,15 @@ export const people = sqliteTable(
 		 * removePerson clears references to a deleted person instead.
 		 */
 		lastYearRecipientId: integer("last_year_recipient_id"),
+		/**
+		 * When this person was last emailed an invitation — a login link sent
+		 * ahead of any draw, so they can get in and choose a password before
+		 * there's anything to see. Null until they have been.
+		 *
+		 * On the person rather than on an assignment, unlike notifiedAt: an
+		 * invitation is about the account, and a re-draw changes nothing about it.
+		 */
+		invitedAt: integer("invited_at", { mode: "timestamp" }),
 		// Gates access to the people-management API (list/create/delete/partner)
 		// — see auth/middleware.ts. Not settable through the app itself; granted
 		// out-of-band via the set-admin script (server/src/scripts/set-admin.ts).

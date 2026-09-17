@@ -10,6 +10,7 @@ const person = (id: number, partnerId: number | null = null): MatchingPerson => 
 	// Irrelevant here: the matching takes last year's pairings as an
 	// argument rather than reading them off the person — see doMatching.
 	lastYearRecipientId: null,
+	invitedAt: null,
 	isAdmin: false,
 	hasMatch: false,
 	currentTarget: null,

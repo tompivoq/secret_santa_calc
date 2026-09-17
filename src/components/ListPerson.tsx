@@ -1,8 +1,20 @@
 import { useState } from "react";
-import { FaPen, FaRegTrashCan } from "react-icons/fa6";
+import { FaEnvelope, FaPen, FaRegTrashCan } from "react-icons/fa6";
 import type { Person } from "../models/person";
+import { useInvitePeopleMutation } from "../store/peopleApi";
 import { findPartner } from "../utils/person_utils";
 import { Button } from "./shared/Button";
+
+/** Furthest along wins: someone who has logged in no longer cares when they were invited. */
+const loginStatus = (person: Person): string => {
+	if (person.hasChosenPassword) {
+		return "Logget ind";
+	}
+	if (person.invitedAt) {
+		return `Inviteret d. ${new Date(person.invitedAt).toLocaleDateString()}`;
+	}
+	return "Ikke inviteret";
+};
 
 /** One read-only "Label: value" pair, for the details the edit form owns. */
 const Detail = ({ label, value }: { label: string; value: string }) => (
@@ -30,8 +42,11 @@ export const ListPerson = ({
 	onDelete,
 }: ListPersonProps) => {
 	const [pendingDelete, setPendingDelete] = useState(false);
+	const [invite, { data: inviteResult, error: inviteError, isLoading: isInviting }] =
+		useInvitePeopleMutation();
 	const partner = findPartner(others, person);
 	const lastYearRecipient = others.find((other) => other.id === person.lastYearRecipientId);
+	const inviteFailure = inviteError ? "Kunne ikke sende" : inviteResult?.failed[0]?.error;
 	return (
 		<li
 			key={person.id}
@@ -58,8 +73,17 @@ export const ListPerson = ({
 				<div className="flex w-full flex-wrap items-center gap-4 pl-3 sm:pl-0">
 					<Detail label="Partner:" value={partner?.name ?? "Ingen"} />
 					<Detail label="Sidste år:" value={lastYearRecipient?.name ?? "Ingen"} />
+					<Detail label="Login:" value={loginStatus(person)} />
 				</div>
-				<div className="flex flex-row justify-end gap-2">
+				{inviteFailure && (
+					<p className="pl-3 text-sm text-red-600 sm:pl-0 dark:text-red-400">
+						Invitationen blev ikke sendt: {inviteFailure}
+					</p>
+				)}
+				{inviteResult && inviteResult.invited.length > 0 && (
+					<p className="pl-3 text-sm sm:pl-0">Invitation sendt.</p>
+				)}
+				<div className="flex flex-row flex-wrap justify-end gap-2">
 					{pendingDelete === true ? (
 						<div className="flex items-center gap-2">
 							<span className="text-sm">Slet {person.name}?</span>
@@ -72,6 +96,18 @@ export const ListPerson = ({
 						</div>
 					) : (
 						<>
+							{/* Always offered, even to someone already in: a fresh link is
+							    also how a person who has forgotten their password gets back. */}
+							<Button
+								behaviour="neutral"
+								disabled={isInviting}
+								onClick={() => void invite({ personIds: [person.id] })}
+							>
+								<FaEnvelope className="size-3" />
+								<span>
+									{isInviting ? "Sender…" : person.invitedAt ? "Inviter igen" : "Inviter"}
+								</span>
+							</Button>
 							<Button behaviour="neutral" onClick={onEdit}>
 								<FaPen className="size-3" />
 								<span>Rediger</span>

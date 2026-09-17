@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import PersonForm from "../components/PersonForm";
 import MatchRunner from "../components/MatchRunner";
+import InvitePanel from "../components/InvitePanel";
 import { useGetPeopleQuery } from "../store/peopleApi";
 import { FaChevronRight } from "react-icons/fa6";
 import { PersonList } from "../components/PersonList";
@@ -54,6 +55,8 @@ function AdminPage() {
 				onSelectAll={() => setExplicitSelection(new Set(allIds))}
 				onSelectNone={() => setExplicitSelection(new Set())}
 			/>
+
+			{allIds.length > 0 && <InvitePanel />}
 
 			{allIds.length > 0 && <MatchRunner selectedIds={selectedIds} />}
 		</>

@@ -10,6 +10,13 @@ export interface Person {
 	 * the matcher routes.
 	 */
 	lastYearRecipientId?: number | null;
+	/** When they were last emailed an invitation (a login link ahead of the draw). Null if never. */
+	invitedAt?: string | null;
+	/**
+	 * Whether they've logged in and replaced their initial password. Only
+	 * in the admin's people list — not on the person a session reports.
+	 */
+	hasChosenPassword?: boolean;
 	/** Gates access to the people-management page — granted out-of-band, not settable through the app. */
 	isAdmin: boolean;
 }

@@ -2,9 +2,11 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { requireAuth, requireAdmin } from "../auth/middleware.js";
 import { AuthVariables } from "../auth/types.js";
-import { listPeople, addPerson, removePerson, updatePerson } from "./people.js";
+import { listPeopleWithLoginStatus, addPerson, removePerson, updatePerson } from "./people.js";
+import { invitePeople } from "./invite.js";
 import { z } from "zod";
 import type { Db } from "../db/client.js";
+import type { Mailer } from "../mail/mailer.js";
 
 const newPersonSchema = z.object({
 	name: z.string().min(1),
@@ -36,13 +38,33 @@ const UPDATE_ERRORS = {
 const isUniqueConstraintError = (err: unknown): boolean =>
 	err instanceof Error && "code" in err && err.code === "SQLITE_CONSTRAINT_UNIQUE";
 
+const inviteRequestSchema = z.object({
+	/**
+	 * Who to invite. Omitted means everyone still waiting for an invitation;
+	 * naming people sends to exactly those, as a re-send.
+	 */
+	personIds: z.array(z.int()).min(1).optional(),
+});
+
+export interface PeopleOptions {
+	mailer: Mailer;
+	appBaseUrl: string;
+}
+
 // Seeing or editing the full list of people — including everyone's
 // email, phone, and (at creation time) their plaintext initial password
 // — is an admin action, not something every logged-in person gets.
-export const getRoutes = (db: Db, authSecret: string) =>
+export const getRoutes = (db: Db, authSecret: string, { mailer, appBaseUrl }: PeopleOptions) =>
 	new Hono<{ Variables: AuthVariables }>()
 		.use("*", requireAuth(authSecret), requireAdmin(db))
-		.get("/", (c) => c.json(listPeople(db)))
+		.get("/", (c) => c.json(listPeopleWithLoginStatus(db)))
+		// Needs no draw — inviting people is how they get their password sorted
+		// before there is one. 200 even with failures in it, for the same reason
+		// as /api/matcher/notify: the admin needs to see who, not one verdict.
+		.post("/invite", zValidator("json", inviteRequestSchema), async (c) => {
+			const { personIds } = c.req.valid("json");
+			return c.json(await invitePeople(db, mailer, authSecret, appBaseUrl, { personIds }));
+		})
 		.post("/", zValidator("json", newPersonSchema), (c) => {
 			try {
 				const created = addPerson(db, c.req.valid("json"));
