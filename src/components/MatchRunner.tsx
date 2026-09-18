@@ -47,7 +47,7 @@ const DrawSummary = ({ draw, nameById }: { draw: Draw; nameById: Map<number, str
 					<span className="font-medium">{draw.participantIds.length} deltagere</span> blev matched:{" "}
 					{draw.participantIds.map((id) => nameById.get(id) ?? "Ukendt").join(", ")}.
 				</p>
-				<p className="text-gray-600 dark:text-gray-400">
+				<p className="text-text-muted">
 					Resultatet vil være skjult, også fra dig så din egen match er en overraskelse.
 				</p>
 			</div>
@@ -91,7 +91,7 @@ const NotifyPanel = ({ draw, nameById }: { draw: Draw; nameById: Map<number, str
 					>
 						{isLoading ? "Sender…" : `Send email til de ${waiting.length} der stadig venter`}
 					</Button>
-					<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+					<p className="text-text-muted mt-1 text-sm">
 						Mangler stadig besked: {waiting.map((id) => nameById.get(id) ?? "Ukendt").join(", ")}.
 					</p>
 				</div>
@@ -105,7 +105,7 @@ const NotifyPanel = ({ draw, nameById }: { draw: Draw; nameById: Map<number, str
 					>
 						{isLoading ? "Sender…" : "Send alle deres link igen"}
 					</Button>
-					<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+					<p className="text-text-muted mt-1 text-sm">
 						Alle har fået tilsendt mail. Gensendelse udsteder friske links, og invaliderer de gamle.
 					</p>
 				</div>
@@ -172,7 +172,7 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 						/>
 						Test-kørsel
 					</label>
-					<p className="text-sm text-gray-600 dark:text-gray-400">
+					<p className="text-text-muted text-sm">
 						{testRun
 							? "Parringer vil blive vist, inklusiv din egen. Fjern afkrydsning for at udføre den endelige lodtrækning."
 							: "Endelig lodtrækning!"}
@@ -193,7 +193,7 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 									: `Kør lodtrækning (${selectedCount} valgt)`}
 						</Button>
 						{selectedCount < 2 && (
-							<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+							<p className="text-text-muted mt-1 text-sm">
 								Vælg mindst to deltagere for at køre en lodtrækning
 							</p>
 						)}
@@ -201,13 +201,9 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 				</div>
 			)}
 
-			{draftError && (
-				<p className="text-sm text-error dark:text-red-400">{draftErrorMessage(draftError)}</p>
-			)}
+			{draftError && <p className="text-error text-sm">{draftErrorMessage(draftError)}</p>}
 			{lockError && (
-				<p className="text-sm text-error dark:text-red-400">
-					Kunne ikke låse lodtrækningen. Prøv venligst igen.
-				</p>
+				<p className="text-error text-sm">Kunne ikke låse lodtrækningen. Prøv venligst igen.</p>
 			)}
 
 			{draftResult?.repeatedLastYear && (

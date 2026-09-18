@@ -12,8 +12,8 @@ interface FormData {
 
 const inputClasses = (hasError: boolean) =>
 	clsx(
-		"rounded-md border px-2.5 py-2 text-base dark:border-gray-700",
-		hasError ? "border-red-500 dark:border-red-500" : "border-gray-300",
+		"rounded-md border px-2.5 py-2 text-base",
+		hasError ? "border-error" : "border-input-border",
 	);
 
 interface ChangePasswordFormProps {
@@ -90,9 +90,7 @@ function ChangePasswordForm({ onSuccess, intro }: ChangePasswordFormProps = {}) 
 						className={inputClasses(!!errors.currentPassword)}
 					/>
 					{errors.currentPassword && (
-						<span className="text-sm text-red-600 dark:text-red-400">
-							{errors.currentPassword.message}
-						</span>
+						<span className="text-error text-sm">{errors.currentPassword.message}</span>
 					)}
 				</div>
 			)}
@@ -111,9 +109,7 @@ function ChangePasswordForm({ onSuccess, intro }: ChangePasswordFormProps = {}) 
 					className={inputClasses(!!errors.newPassword)}
 				/>
 				{errors.newPassword && (
-					<span className="text-sm text-red-600 dark:text-red-400">
-						{errors.newPassword.message}
-					</span>
+					<span className="text-error text-sm">{errors.newPassword.message}</span>
 				)}
 			</div>
 
@@ -132,20 +128,16 @@ function ChangePasswordForm({ onSuccess, intro }: ChangePasswordFormProps = {}) 
 					className={inputClasses(!!errors.confirmNewPassword)}
 				/>
 				{errors.confirmNewPassword && (
-					<span className="text-sm text-red-600 dark:text-red-400">
-						{errors.confirmNewPassword.message}
-					</span>
+					<span className="text-error text-sm">{errors.confirmNewPassword.message}</span>
 				)}
 			</div>
 
-			{errors.root && (
-				<span className="text-sm text-red-600 dark:text-red-400">{errors.root.message}</span>
-			)}
+			{errors.root && <span className="text-error text-sm">{errors.root.message}</span>}
 
 			<button
 				type="submit"
 				disabled={!isValid || isLoading}
-				className="cursor-pointer self-start rounded-md border border-gray-700 px-4 py-2 text-base hover:bg-gray-100 disabled:opacity-50 dark:border-gray-300 dark:hover:bg-gray-800"
+				className="border-border-strong hover:bg-bg-sunken cursor-pointer self-start rounded-md border px-4 py-2 text-base disabled:opacity-50"
 			>
 				Sæt nyt password
 			</button>

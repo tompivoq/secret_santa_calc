@@ -48,7 +48,7 @@ export const Modal = ({ open, onClose, title, children }: ModalProps) => {
 			// the top-left corner. This puts the centering back.
 			// max-h/overflow keep a long form scrollable instead of overflowing
 			// the viewport.
-			className="bg-blue-spruce-950 text-metallic-gold-50 m-auto max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-xl border border-gray-400 p-0 backdrop:bg-black/60"
+			className="bg-bg-elevated text-text-body m-auto max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-xl border p-0 backdrop:bg-neutral-900/60"
 		>
 			<div className="flex flex-col gap-4 p-5 text-left">
 				<div className="flex flex-row items-center justify-between">

@@ -55,7 +55,7 @@ function PersonForm() {
 	return (
 		<div className="flex flex-col gap-4 p-4">
 			{justCreated && (
-				<div className="border-ink-black-950 bg-blue-spruce-800 w-fit self-center rounded-xl border p-6 text-left text-sm">
+				<div className="bg-bg-elevated w-fit self-center rounded-xl border p-6 text-left text-sm">
 					<div className="flex flex-col gap-1">
 						<div className="flex flex-row gap-2">
 							<span className="font-semibold">{justCreated.name}</span> blev tilføjet
@@ -90,7 +90,7 @@ function PersonForm() {
 							disabled: validPartners.length < 1,
 							setValueAs: (value) => (value === "" ? undefined : Number(value)),
 						})}
-						className="rounded-md border border-gray-300 px-2.5 py-2 text-base disabled:opacity-50 dark:border-gray-700"
+						className="border-input-border rounded-md border px-2.5 py-2 text-base disabled:opacity-50"
 					>
 						<option value="">Ingen</option>
 						{validPartners.map((person) => (

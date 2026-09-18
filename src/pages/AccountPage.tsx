@@ -38,15 +38,13 @@ function AccountPage() {
 
 	return (
 		<div className="mt-8 flex flex-col items-stretch gap-4 text-left">
-			<div className="border-blue-spruce-400 rounded-xl border p-5 text-center">
+			<div className="rounded-xl border p-5 text-center">
 				{isLoading ? (
 					<p>Finder dit match...</p>
 				) : match?.recipient ? (
 					<>
 						<p className="text-sm">Du skal give en gave til:</p>
-						<p className="text-metallic-gold-500 mt-1 text-2xl font-medium">
-							{match.recipient.name}
-						</p>
+						<p className="text-brand mt-1 text-2xl font-medium">{match.recipient.name}</p>
 					</>
 				) : (
 					<p>
@@ -59,7 +57,7 @@ function AccountPage() {
 
 			<section
 				aria-labelledby="my-details-heading"
-				className="border-blue-spruce-400 flex flex-col gap-3 rounded-xl border p-5"
+				className="flex flex-col gap-3 rounded-xl border p-5"
 			>
 				<div className="flex flex-row items-center gap-2">
 					<h2 id="my-details-heading" className="text-lg">
@@ -87,9 +85,6 @@ function AccountPage() {
 					<Button behaviour="neutral" onClick={() => setOpenDialog("password")}>
 						Ændre password
 					</Button>
-					{/* <Button behaviour="action" onClick={() => setOpenDialog("details")}>
-						Rediger info
-					</Button> */}
 				</div>
 			</section>
 

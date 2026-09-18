@@ -66,9 +66,7 @@ function EditMyDetailsForm({ person, onDone }: EditMyDetailsFormProps) {
 				emailNote="Din e-mail bruger du til at logge ind med. Det er også her vi sender beskeder til dig, så sørg for den er gyldig."
 			/>
 
-			{errors.root && (
-				<span className="text-sm text-red-600 dark:text-red-400">{errors.root.message}</span>
-			)}
+			{errors.root && <span className="text-error text-sm">{errors.root.message}</span>}
 
 			<FormActionButtons onCancel={onDone} isFormValid={isValid} isLoading={isLoading} />
 		</form>

@@ -24,7 +24,7 @@ function InvitePanel() {
 	const invitedNotIn = people.filter((person) => !person.hasChosenPassword && person.invitedAt);
 
 	return (
-		<div className="border-t-metallic-gold-400 mt-4 flex flex-col gap-3 border-t p-4 text-left">
+		<div className="mt-4 flex flex-col gap-3 border-t p-4 text-left">
 			<h3 className="text-lg">Invitationer</h3>
 			<p className="text-sm">
 				{loggedIn.length} ud af {people.length} har logget ind og valgt deres egen adgangskode.
@@ -40,14 +40,10 @@ function InvitePanel() {
 					>
 						{isLoading ? "Sender…" : `Send invitation til de ${awaiting.length} der mangler`}
 					</Button>
-					<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-						Mangler invitation: {names(awaiting)}.
-					</p>
+					<p className="text-text-muted mt-1 text-sm">Mangler invitation: {names(awaiting)}.</p>
 				</div>
 			) : (
-				<p className="text-sm text-gray-600 dark:text-gray-400">
-					Alle er inviteret eller har allerede logget ind.
-				</p>
+				<p className="text-text-muted text-sm">Alle er inviteret eller har allerede logget ind.</p>
 			)}
 
 			{invitedNotIn.length > 0 && (
@@ -62,7 +58,7 @@ function InvitePanel() {
 							? "Sender…"
 							: `Send igen til de ${invitedNotIn.length} der ikke har logget ind`}
 					</Button>
-					<p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+					<p className="text-text-muted mt-1 text-sm">
 						Inviteret, men ikke logget ind endnu: {names(invitedNotIn)}. Gensendelse udsteder friske
 						links, og invaliderer de gamle.
 					</p>

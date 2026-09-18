@@ -12,8 +12,8 @@ export interface PersonDetailValues {
 
 const inputClasses = (hasError: boolean) =>
 	clsx(
-		"rounded-md border px-2.5 py-2 text-base dark:border-gray-700",
-		hasError ? "border-red-500 dark:border-red-500" : "border-gray-300",
+		"rounded-md border px-2.5 py-2 text-base",
+		hasError ? "border-error" : "border-input-border",
 	);
 
 interface PersonDetailFieldsProps<T extends PersonDetailValues> {
@@ -63,9 +63,7 @@ export const PersonDetailFields = <T extends PersonDetailValues>({
 					className={inputClasses(!!fieldErrors.name)}
 				/>
 				{fieldErrors.name && (
-					<span className="text-sm text-red-600 dark:text-red-400">
-						{fieldErrors.name.message?.toString()}
-					</span>
+					<span className="text-error text-sm">{fieldErrors.name.message?.toString()}</span>
 				)}
 			</div>
 
@@ -88,13 +86,9 @@ export const PersonDetailFields = <T extends PersonDetailValues>({
 						className={inputClasses(!!fieldErrors.email)}
 					/>
 					{fieldErrors.email && (
-						<span className="text-sm text-red-600 dark:text-red-400">
-							{fieldErrors.email.message?.toString()}
-						</span>
+						<span className="text-error text-sm">{fieldErrors.email.message?.toString()}</span>
 					)}
-					{emailNote && (
-						<span className="text-sm text-gray-600 dark:text-gray-400">{emailNote}</span>
-					)}
+					{emailNote && <span className="text-text-muted text-sm">{emailNote}</span>}
 				</div>
 
 				<div className="flex w-full flex-col gap-1">
@@ -116,9 +110,7 @@ export const PersonDetailFields = <T extends PersonDetailValues>({
 						className={inputClasses(!!fieldErrors.phone)}
 					/>
 					{fieldErrors.phone && (
-						<span className="text-sm text-red-600 dark:text-red-400">
-							{fieldErrors.phone.message?.toString()}
-						</span>
+						<span className="text-error text-sm">{fieldErrors.phone.message?.toString()}</span>
 					)}
 				</div>
 			</div>

@@ -30,21 +30,21 @@ export const TopBarNav = () => {
 	return (
 		<div className="sticky top-0 right-0 left-0 w-full">
 			<div className="relative w-full">
-				<div className="flex w-full flex-col text-text-inverse shadow-lg bg-linear-to-b/hsl from-bg-topbar-start to-bg-topbar-end">
-					<div className="mx-auto flex w-full py-2 max-w-4xl flex-row items-center-safe justify-between px-8">
+				<div className="text-text-inverse from-bg-topbar-start to-bg-topbar-end flex w-full flex-col bg-linear-to-b/hsl shadow-lg">
+					<div className="mx-auto flex w-full max-w-4xl flex-row items-center-safe justify-between px-8 py-2">
 						<div className="grow">
-						<img
-							src={LOGO_WIDE}
-							className="hidden max-h-12 justify-self-start md:flex"
-							alt="Julenissen"
-							title="Julenissen"
-						/>
-						<img
-							src={LOGO_COMPACT}
-							className="max-h-12 justify-self-start md:hidden"
-							alt="Julenissen"
-							title="Julenissen"
-						/>
+							<img
+								src={LOGO_WIDE}
+								className="hidden max-h-12 justify-self-start md:flex"
+								alt="Julenissen"
+								title="Julenissen"
+							/>
+							<img
+								src={LOGO_COMPACT}
+								className="max-h-12 justify-self-start md:hidden"
+								alt="Julenissen"
+								title="Julenissen"
+							/>
 						</div>
 						<ThemeToggle className="md:hidden" />
 						{isSignedIn && (
@@ -53,14 +53,12 @@ export const TopBarNav = () => {
 								onClick={() => setMenuOpen((open) => !open)}
 								aria-label="Toggle menu"
 								aria-expanded={menuOpen}
-								className="cursor-pointer text-brand-foreground p-2 md:hidden"
+								className="text-brand-foreground cursor-pointer p-2 md:hidden"
 							>
-								{
-									menuOpen ? (<FaX />) : (<FaBars />)
-								}
+								{menuOpen ? <FaX /> : <FaBars />}
 							</button>
 						)}
-						<nav className="my-2 hidden flex-1 min-w-fit justify-end text-base md:flex">
+						<nav className="my-2 hidden min-w-fit flex-1 justify-end text-base md:flex">
 							{isSignedIn && (
 								<>
 									{me.person.isAdmin && (
@@ -68,14 +66,19 @@ export const TopBarNav = () => {
 											<Link to="/" className="text-brand-foreground underline hover:no-underline">
 												Deltagere
 											</Link>
-											<Link to="/account" className="text-brand-foreground underline hover:no-underline">
+											<Link
+												to="/account"
+												className="text-brand-foreground underline hover:no-underline"
+											>
 												Min side
 											</Link>
 										</div>
 									)}
 									<ThemeToggle />
-									<div id="user" className="flex flex-col items-center text-brand-foreground self-end-safe px-2">
-										{/* <span className="text-sm">Logget ind som</span> */}
+									<div
+										id="user"
+										className="text-brand-foreground flex flex-col items-center self-end-safe px-2"
+									>
 										<span className="font-semibold">{me.person.name}</span>
 										<Button onClick={() => logout()} behaviour="action">
 											Log ud
@@ -87,7 +90,7 @@ export const TopBarNav = () => {
 					</div>
 				</div>
 				{isSignedIn && menuOpen && (
-					<nav className="absolute right-0 bg-bg-topbar-end text-brand-foreground flex w-fit flex-col items-end gap-4 px-4 py-4 border-t border-t-brand-light rounded-b-lg md:hidden">
+					<nav className="bg-bg-topbar-end text-brand-foreground border-t-brand-light absolute right-0 flex w-fit flex-col items-end gap-4 rounded-b-lg border-t px-4 py-4 md:hidden">
 						{me.person.isAdmin && (
 							<div id="page_nav" className="flex flex-col gap-3">
 								<Link
@@ -106,8 +109,8 @@ export const TopBarNav = () => {
 								</Link>
 							</div>
 						)}
-						<div id="user" className="flex flex-row justify-between w-full items-center">
-							<div className="flex flex-row grow items-center gap-2">
+						<div id="user" className="flex w-full flex-row items-center justify-between">
+							<div className="flex grow flex-row items-center gap-2">
 								<span className="font-semibold">{me.person.name}</span>
 								<Button
 									onClick={() => {

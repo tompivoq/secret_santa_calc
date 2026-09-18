@@ -12,18 +12,14 @@ interface SendOutcomeProps {
  */
 export const SendOutcome = ({ sent, failed, hasError }: SendOutcomeProps) => (
 	<>
-		{hasError && (
-			<p className="text-sm text-red-600 dark:text-red-400">
-				Kunne ikke sende mails. Prøv venligst igen.
-			</p>
-		)}
+		{hasError && <p className="text-error text-sm">Kunne ikke sende mails. Prøv venligst igen.</p>}
 
 		{sent && sent.length > 0 && (
 			<p className="text-sm">Sendte email til {sent.map((person) => person.name).join(", ")}.</p>
 		)}
 
 		{failed && failed.length > 0 && (
-			<div className="text-sm text-red-600 dark:text-red-400">
+			<div className="text-error text-sm">
 				{/* Named individually: the admin has to know who to chase, and a
 				    count alone wouldn't tell them. */}
 				<p>Kunne ikke sende til disse deltagere. De vil blive forsøgt igen næste gang:</p>

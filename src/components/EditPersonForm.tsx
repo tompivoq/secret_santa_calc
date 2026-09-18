@@ -78,7 +78,7 @@ function EditPersonForm({ person, others, onDone }: EditPersonFormProps) {
 					{...register("partnerId", {
 						setValueAs: (value) => (value === "" || value === null ? null : Number(value)),
 					})}
-					className="rounded-md border border-gray-300 px-2.5 py-2 text-base dark:border-gray-700"
+					className="border-input-border rounded-md border px-2.5 py-2 text-base"
 				>
 					<option value="">Ingen</option>
 					{others.map((other) => (
@@ -98,7 +98,7 @@ function EditPersonForm({ person, others, onDone }: EditPersonFormProps) {
 					{...register("lastYearRecipientId", {
 						setValueAs: (value) => (value === "" || value === null ? null : Number(value)),
 					})}
-					className="rounded-md border border-gray-300 px-2.5 py-2 text-base dark:border-gray-700"
+					className="border-input-border rounded-md border px-2.5 py-2 text-base"
 				>
 					<option value="">Ingen</option>
 					{others.map((other) => (
@@ -107,15 +107,13 @@ function EditPersonForm({ person, others, onDone }: EditPersonFormProps) {
 						</option>
 					))}
 				</select>
-				<span className="text-sm text-gray-600 dark:text-gray-400">
+				<span className="text-text-muted text-sm">
 					Hvem de gav til sidste år, hvis lodtrækningen blev foretaget udenfor denne app. Hvis der
 					er en tidligere lodtrækning her, bliver data derfra brugt i stedet.
 				</span>
 			</div>
 
-			{errors.root && (
-				<span className="text-sm text-red-600 dark:text-red-400">{errors.root.message}</span>
-			)}
+			{errors.root && <span className="text-error text-sm">{errors.root.message}</span>}
 
 			<FormActionButtons onCancel={onDone} isFormValid={isValid} isLoading={isLoading} />
 		</form>

@@ -12,8 +12,8 @@ interface FormData {
 
 const inputClasses = (hasError: boolean) =>
 	clsx(
-		"rounded-md border px-2.5 py-2 text-base dark:border-gray-700",
-		hasError ? "border-red-500 dark:border-red-500" : "border-gray-300",
+		"rounded-md border px-2.5 py-2 text-base",
+		hasError ? "border-error" : "border-input-border",
 	);
 
 function LoginPage() {
@@ -56,12 +56,12 @@ function LoginPage() {
 	};
 
 	return (
-		<div className="mt-8 flex flex-col gap-4 rounded-xl border border-gray-400 p-5">
+		<div className="mt-8 flex flex-col gap-4 rounded-xl border p-5">
 			{linkExpired && (
 				// Where /api/auth/magic/:token redirects a link that's already been
 				// followed, or has expired. Without this it would look like an
 				// ordinary trip to the login page, for no apparent reason.
-				<p className="text-left text-sm text-red-600 dark:text-red-400">
+				<p className="text-error text-left text-sm">
 					Dit link er allerede blevet brugt, eller er udløbet. Enten bed om et nyt fra admin, eller
 					log ind herunder.
 				</p>
@@ -81,9 +81,7 @@ function LoginPage() {
 						{...register("email", { required: "Email er påkrævet" })}
 						className={inputClasses(!!errors.email)}
 					/>
-					{errors.email && (
-						<span className="text-sm text-red-600 dark:text-red-400">{errors.email.message}</span>
-					)}
+					{errors.email && <span className="text-error text-sm">{errors.email.message}</span>}
 				</div>
 
 				<div className="flex flex-col gap-1">
@@ -96,21 +94,15 @@ function LoginPage() {
 						{...register("password", { required: "Password er påkrævet" })}
 						className={inputClasses(!!errors.password)}
 					/>
-					{errors.password && (
-						<span className="text-sm text-red-600 dark:text-red-400">
-							{errors.password.message}
-						</span>
-					)}
+					{errors.password && <span className="text-error text-sm">{errors.password.message}</span>}
 				</div>
 
-				{errors.root && (
-					<span className="text-sm text-red-600 dark:text-red-400">{errors.root.message}</span>
-				)}
+				{errors.root && <span className="text-error text-sm">{errors.root.message}</span>}
 
 				<button
 					type="submit"
 					disabled={!isValid || isLoading}
-					className="cursor-pointer self-start rounded-md border border-gray-700 px-4 py-2 text-base hover:bg-gray-100 disabled:opacity-50 dark:border-gray-300 dark:hover:bg-gray-800"
+					className="border-border-strong hover:bg-bg-sunken cursor-pointer self-start rounded-md border px-4 py-2 text-base disabled:opacity-50"
 				>
 					Log ind
 				</button>

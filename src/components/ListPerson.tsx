@@ -76,7 +76,7 @@ export const ListPerson = ({
 					<Detail label="Login:" value={loginStatus(person)} />
 				</div>
 				{inviteFailure && (
-					<p className="pl-3 text-sm text-error sm:pl-0 dark:text-red-400">
+					<p className="text-error pl-3 text-sm sm:pl-0">
 						Invitationen blev ikke sendt: {inviteFailure}
 					</p>
 				)}
