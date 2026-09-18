@@ -263,12 +263,24 @@ describe("logging out", () => {
 });
 
 describe("admin access to the people-management page", () => {
-	it("shows a 'no access' message to a logged-in non-admin who visits it directly", async () => {
+	it("sends a logged-in non-admin who visits it directly to their own account page", async () => {
 		stubAuthApi({ startAuthenticated: true, mustChangePassword: false });
 		renderAt("/");
 
+		// "/" is where everyone lands, so a non-admin is taken somewhere
+		// useful rather than told they can't be there.
+		await screen.findByText(/Nisserne har ikke trukket lod endnu/);
+		expect(window.location.pathname).toBe("/account");
+		expect(screen.queryByText("Tilføj person")).toBeNull();
+		expect(screen.queryByText("Du har desværre ikke adgang til denne side")).toBeNull();
+	});
+
+	it("still shows a 'no access' message on other admin-only pages", async () => {
+		stubAuthApi({ startAuthenticated: true, mustChangePassword: false });
+		renderAt("/styleguide");
+
 		await screen.findByText("Du har desværre ikke adgang til denne side");
-		expect(screen.queryByLabelText("Navn")).toBeNull();
+		expect(screen.queryByRole("heading", { name: "Style guide" })).toBeNull();
 	});
 
 	it("shows the page, and the nav link, to a logged-in admin", async () => {
