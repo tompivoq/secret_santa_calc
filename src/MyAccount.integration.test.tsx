@@ -89,10 +89,10 @@ const openDialog = async (user: ReturnType<typeof userEvent.setup>, button: stri
 
 /**
  * The "Dine info" card. Scoped rather than queried globally because the
- * nav bar also says "Logget ind som <name>", so the name alone matches twice.
+ * nav bar also shows the signed-in person's name, so it alone matches twice.
  * Re-resolved on each call so it reflects the current render.
  */
-const inDetails = () => within(screen.getByRole("heading", { name: "Dine info" }).parentElement!);
+const inDetails = () => within(screen.getByRole("region", { name: "Dine info" }));
 
 const waitForDetails = () => screen.findByRole("heading", { name: "Dine info" });
 
@@ -117,7 +117,7 @@ describe("seeing and editing your own details", () => {
 		renderAccountPage();
 
 		await waitForDetails();
-		const dialog = await openDialog(user, "Rediger info");
+		const dialog = await openDialog(user, "Rediger din info");
 		await user.clear(dialog.getByLabelText("Navn"));
 		await user.type(dialog.getByLabelText("Navn"), "Anna Marie");
 		await user.click(dialog.getByRole("button", { name: "Gem ændringer" }));
@@ -133,7 +133,7 @@ describe("seeing and editing your own details", () => {
 		renderAccountPage();
 
 		await waitForDetails();
-		const dialog = await openDialog(user, "Rediger info");
+		const dialog = await openDialog(user, "Rediger din info");
 		await user.clear(dialog.getByLabelText("Telefon-nummer"));
 		await user.type(dialog.getByLabelText("Telefon-nummer"), "99887766");
 		await user.click(dialog.getByRole("button", { name: "Gem ændringer" }));
@@ -153,7 +153,7 @@ describe("seeing and editing your own details", () => {
 		renderAccountPage();
 
 		await waitForDetails();
-		const dialog = await openDialog(user, "Rediger info");
+		const dialog = await openDialog(user, "Rediger din info");
 		await user.clear(dialog.getByLabelText("E-mail"));
 		await user.type(dialog.getByLabelText("E-mail"), "taken@example.com");
 		await user.click(dialog.getByRole("button", { name: "Gem ændringer" }));

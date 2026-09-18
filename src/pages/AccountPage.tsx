@@ -57,11 +57,26 @@ function AccountPage() {
 				)}
 			</div>
 
-			<div className="border-blue-spruce-400 flex flex-col gap-3 rounded-xl border p-5">
-				<h2 className="text-lg flex flex-row gap-2 items-center">
-					Dine info
-					<FaPencil className="size-4 text-accent-light hover:text-accent" onClick={() => setOpenDialog("details")} title="Rediger din info"/>
-				</h2>
+			<section
+				aria-labelledby="my-details-heading"
+				className="border-blue-spruce-400 flex flex-col gap-3 rounded-xl border p-5"
+			>
+				<div className="flex flex-row items-center gap-2">
+					<h2 id="my-details-heading" className="text-lg">
+						Dine info
+					</h2>
+					{/* A real button, outside the heading: reachable by keyboard, and
+					    its label doesn't become part of the heading's name. */}
+					<button
+						type="button"
+						onClick={() => setOpenDialog("details")}
+						aria-label="Rediger din info"
+						title="Rediger din info"
+						className="text-accent-light hover:text-accent cursor-pointer"
+					>
+						<FaPencil className="size-4" aria-hidden />
+					</button>
+				</div>
 				<Detail label="Navn" value={person.name} />
 				<Detail label="E-mail" value={person.email} />
 				<Detail label="Telefon" value={String(person.phone)} />
@@ -76,7 +91,7 @@ function AccountPage() {
 						Rediger info
 					</Button> */}
 				</div>
-			</div>
+			</section>
 
 			{openDialog === "details" && (
 				<Modal open onClose={() => setOpenDialog(null)} title="Rediger din info">

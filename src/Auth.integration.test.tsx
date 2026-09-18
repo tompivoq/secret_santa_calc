@@ -245,7 +245,7 @@ describe("logging out", () => {
 
 		await screen.findByText(/Nisserne har ikke trukket lod endnu/);
 		expect(screen.getByRole("link", { name: "Min side" })).not.toBeNull();
-		expect(screen.getByText(/Logget ind som/)).not.toBeNull();
+		expect(screen.getByRole("button", { name: "Log ud" })).not.toBeNull();
 
 		await user.click(screen.getByRole("button", { name: "Log ud" }));
 
@@ -258,7 +258,7 @@ describe("logging out", () => {
 		// successful `data` around even once the invalidated "me" query's
 		// refetch errors, so `me` alone stayed truthy after logout.
 		expect(screen.queryByRole("link", { name: "Min side" })).toBeNull();
-		expect(screen.queryByText(/Logget ind som/)).toBeNull();
+		expect(screen.queryByRole("button", { name: "Log ud" })).toBeNull();
 	});
 });
 
