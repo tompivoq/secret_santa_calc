@@ -13,9 +13,11 @@ import { useMeQuery } from "../store/authApi";
  */
 function RequireAuth({
 	children,
+	redirect = null,
 	adminOnly = false,
 }: {
 	children: ReactNode;
+	redirect?: ReactNode;
 	adminOnly?: boolean;
 }) {
 	const { data, isLoading, isError } = useMeQuery();
@@ -33,8 +35,11 @@ function RequireAuth({
 	}
 
 	if (adminOnly && !data.person.isAdmin) {
+		if (redirect !== null) {
+			return redirect;
+		}
 		return (
-			<p className="border-blue-spruce-400 mt-8 rounded-xl border p-5 text-center">
+			<p className="mt-8 rounded-xl border p-5 text-center">
 				Du har desværre ikke adgang til denne side
 			</p>
 		);

@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
@@ -16,7 +16,7 @@ function App() {
 					<Route
 						path="/"
 						element={
-							<RequireAuth adminOnly>
+							<RequireAuth adminOnly redirect={<Navigate to="/account" replace />}>
 								<AdminPage />
 							</RequireAuth>
 						}
@@ -30,7 +30,14 @@ function App() {
 							</RequireAuth>
 						}
 					/>
-					<Route path="/styleguide" element={<StyleGuide />} />
+					<Route
+						path="/styleguide"
+						element={
+							<RequireAuth adminOnly>
+								<StyleGuide />
+							</RequireAuth>
+						}
+					/>
 					{/* Not wrapped in RequireAuth — this is where RequireAuth itself
               redirects to while mustChangePassword is set, and it applies
               its own (inverse) guard: nothing pending means nothing to do
