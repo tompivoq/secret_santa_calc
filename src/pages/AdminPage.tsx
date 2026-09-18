@@ -35,7 +35,7 @@ function AdminPage() {
 
 	return (
 		<>
-			<div className="flex h-fit flex-col rounded-xl border border-gray-400">
+			<div className="flex h-fit flex-col rounded-xl border bg-bg-elevated">
 				<div
 					className="flex cursor-pointer flex-row items-center rounded-xl p-5"
 					onClick={() => setFormOpen((prev) => !prev)}

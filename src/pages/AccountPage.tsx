@@ -5,6 +5,7 @@ import ChangePasswordForm from "../components/ChangePasswordForm";
 import EditMyDetailsForm from "../components/EditMyDetailsForm";
 import { Button } from "../components/shared/Button";
 import { Modal } from "../components/shared/Modal";
+import { FaPencil } from "react-icons/fa6";
 
 /** One read-only "Label / value" row of someone's own details. */
 const Detail = ({ label, value }: { label: string; value: string }) => (
@@ -57,7 +58,10 @@ function AccountPage() {
 			</div>
 
 			<div className="border-blue-spruce-400 flex flex-col gap-3 rounded-xl border p-5">
-				<h2 className="text-lg">Dine info</h2>
+				<h2 className="text-lg flex flex-row gap-2 items-center">
+					Dine info
+					<FaPencil className="size-4 text-accent-light hover:text-accent" onClick={() => setOpenDialog("details")} title="Rediger din info"/>
+				</h2>
 				<Detail label="Navn" value={person.name} />
 				<Detail label="E-mail" value={person.email} />
 				<Detail label="Telefon" value={String(person.phone)} />
@@ -68,9 +72,9 @@ function AccountPage() {
 					<Button behaviour="neutral" onClick={() => setOpenDialog("password")}>
 						Ændre password
 					</Button>
-					<Button behaviour="action" onClick={() => setOpenDialog("details")}>
+					{/* <Button behaviour="action" onClick={() => setOpenDialog("details")}>
 						Rediger info
-					</Button>
+					</Button> */}
 				</div>
 			</div>
 

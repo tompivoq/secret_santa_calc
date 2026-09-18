@@ -76,7 +76,7 @@ const NotifyPanel = ({ draw, nameById }: { draw: Draw; nameById: Map<number, str
 	const waiting = draw.participantIds.filter((id) => !draw.notifiedIds.includes(id));
 
 	return (
-		<div className="border-blue-spruce-400 flex flex-col gap-2 border-t pt-3">
+		<div className="flex flex-col gap-2 border-t pt-3">
 			<p className="text-sm">
 				{draw.notifiedIds.length} ud af {draw.participantIds.length} har fået besked.
 			</p>
@@ -147,7 +147,7 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 			currentDraw.participantIds.some((id) => !selectedIds.has(id)));
 
 	return (
-		<div className="border-t-metallic-gold-400 mt-4 flex flex-col gap-3 border-t p-4 text-left">
+		<div className="mt-4 flex flex-col gap-3 border-t p-4 text-left">
 			<h3 className="text-lg">Kør lodtrækningen</h3>
 
 			{isLocked ? (
@@ -202,24 +202,24 @@ function MatchRunner({ selectedIds }: MatchRunnerProps) {
 			)}
 
 			{draftError && (
-				<p className="text-sm text-red-600 dark:text-red-400">{draftErrorMessage(draftError)}</p>
+				<p className="text-sm text-error dark:text-red-400">{draftErrorMessage(draftError)}</p>
 			)}
 			{lockError && (
-				<p className="text-sm text-red-600 dark:text-red-400">
+				<p className="text-sm text-error dark:text-red-400">
 					Kunne ikke låse lodtrækningen. Prøv venligst igen.
 				</p>
 			)}
 
 			{draftResult?.repeatedLastYear && (
-				<p className="text-sm text-gray-600 dark:text-gray-400">
+				<p className="text-sm">
 					Kunne ikke undgå sidste års parringer for alle i gruppen, så nogen er gentaget.
 				</p>
 			)}
 
 			{currentDraw && (
-				<div className="border-blue-spruce-400 flex flex-col gap-3 rounded-xl border p-4">
+				<div className="bg-bg-elevated flex flex-col gap-3 rounded-xl border p-4">
 					{isStale && (
-						<p className="text-sm text-gray-600 dark:text-gray-400">
+						<p className="text-sm">
 							Valgte deltagere er ændret siden sidste trækning. Kør igen for at opdatere.
 						</p>
 					)}

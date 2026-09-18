@@ -50,7 +50,7 @@ export const ListPerson = ({
 	return (
 		<li
 			key={person.id}
-			className="border-blue-spruce-400 flex flex-row gap-3 rounded-xl border p-4 sm:items-center sm:justify-between"
+			className="bg-bg-elevated flex flex-row gap-3 rounded-xl border p-4 sm:items-center sm:justify-between"
 		>
 			<div className="flex grow flex-col gap-2">
 				<div className="flex flex-col items-baseline sm:flex-row">
@@ -76,7 +76,7 @@ export const ListPerson = ({
 					<Detail label="Login:" value={loginStatus(person)} />
 				</div>
 				{inviteFailure && (
-					<p className="pl-3 text-sm text-red-600 sm:pl-0 dark:text-red-400">
+					<p className="pl-3 text-sm text-error sm:pl-0 dark:text-red-400">
 						Invitationen blev ikke sendt: {inviteFailure}
 					</p>
 				)}
