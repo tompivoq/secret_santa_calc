@@ -32,6 +32,7 @@ export const TopBarNav = () => {
 			<div className="relative w-full">
 				<div className="flex w-full flex-col text-text-inverse shadow-lg bg-linear-to-b/hsl from-bg-topbar-start to-bg-topbar-end">
 					<div className="mx-auto flex w-full py-2 max-w-4xl flex-row items-center-safe justify-between px-8">
+						<div className="grow">
 						<img
 							src={LOGO_WIDE}
 							className="hidden max-h-12 justify-self-start md:flex"
@@ -44,6 +45,8 @@ export const TopBarNav = () => {
 							alt="Julenissen"
 							title="Julenissen"
 						/>
+						</div>
+						<ThemeToggle className="md:hidden" />
 						{isSignedIn && (
 							<button
 								type="button"
@@ -57,7 +60,7 @@ export const TopBarNav = () => {
 								}
 							</button>
 						)}
-						<nav className="my-2 hidden flex-1 justify-end text-base md:flex">
+						<nav className="my-2 hidden flex-1 min-w-fit justify-end text-base md:flex">
 							{isSignedIn && (
 								<>
 									{me.person.isAdmin && (
@@ -103,7 +106,6 @@ export const TopBarNav = () => {
 								</Link>
 							</div>
 						)}
-						<ThemeToggle />
 						<div id="user" className="flex flex-row justify-between w-full items-center">
 							<div className="flex flex-row grow items-center gap-2">
 								<span className="font-semibold">{me.person.name}</span>

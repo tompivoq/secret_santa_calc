@@ -1,8 +1,12 @@
+import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import { FaMoon, FaSun } from 'react-icons/fa6';
-// import { Sun, Moon } from 'lucide-react';
 
-export const ThemeToggle = () => {
+interface ThemeToggleProps {
+  className?: string;
+}
+
+export const ThemeToggle = ({className}: ThemeToggleProps) => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [mounted, setMounted] = useState(false);
 
@@ -32,7 +36,7 @@ export const ThemeToggle = () => {
 
   // Render a clean placeholder skeleton until hydration is complete
   if (!mounted) {
-    return <div className="w-10 h-10 rounded-xl bg-bg-sunken animate-pulse" />;
+    return <div className={clsx("w-10 h-10 rounded-xl bg-bg-sunken animate-pulse", className)} />;
   }
 
   return (
@@ -40,7 +44,7 @@ export const ThemeToggle = () => {
       onClick={toggleTheme}
       aria-label="Toggle Theme"
       title={isDarkMode ? "Lightmode" : "Darkmode"}
-      className="p-2.5 rounded-xl text-brand-foreground hover:scale-105 transition-all shadow-sm cursor-pointer"
+      className={clsx("p-2.5 rounded-xl text-brand-foreground hover:scale-105 transition-all shadow-sm cursor-pointer", className)}
     >
       {isDarkMode ? <FaSun className="size-4" /> : <FaMoon className="size-4" />}
     </button>
