@@ -39,9 +39,9 @@ function App() {
 						}
 					/>
 					{/* Not wrapped in RequireAuth — this is where RequireAuth itself
-              redirects to while mustChangePassword is set, and it applies
-              its own (inverse) guard: nothing pending means nothing to do
-              here, so it bounces onward to /account instead. */}
+						redirects to while mustChangePassword is set, and it applies
+						its own (inverse) guard: nothing pending means nothing to do
+						here, so it bounces onward to /account instead. */}
 					<Route path="/change-password" element={<ChangePasswordPage />} />
 				</Routes>
 			</main>

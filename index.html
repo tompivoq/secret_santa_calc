@@ -2,26 +2,26 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<link rel="shortcut icon" href="/favicon.ico">
-		<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-		<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-		<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
-		<link rel="icon" type="image/png" sizes="256x256" href="/favicon-256x256.png">
-		<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+		<link rel="shortcut icon" href="/favicon.ico" />
+		<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+		<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+		<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+		<link rel="icon" type="image/png" sizes="256x256" href="/favicon-256x256.png" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Julenissen</title>
 		<script>
-			if (localStorage.theme === 'dark' || (!('theme' in localStorage) && 
-				window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-				document.documentElement.classList.add('dark')
+			if (
+				localStorage.theme === "dark" ||
+				(!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)
+			) {
+				document.documentElement.classList.add("dark");
 			} else {
-				document.documentElement.classList.remove('dark')
+				document.documentElement.classList.remove("dark");
 			}
 		</script>
 	</head>
-	<body
-		class="m-0 text-[18px]/[145%] antialiased"
-	>
+	<body class="m-0 text-[18px]/[145%] antialiased">
 		<div id="root"></div>
 		<script type="module" src="/src/main.tsx"></script>
 	</body>

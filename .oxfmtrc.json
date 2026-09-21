@@ -1,0 +1,5 @@
+{
+	"sortTailwindcss": true,
+	"useTabs": true,
+	"ignorePatterns": [".claude/settings.json", "TODO.md"]
+}

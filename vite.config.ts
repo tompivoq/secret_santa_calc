@@ -1,6 +1,8 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite-plus";
+import { defineConfig, type UserConfig } from "vite-plus";
+import oxfmtConfig from "./.oxfmtrc.json" with { type: "json" };
+import oxlintConfig from "./.oxlintrc.json" with { type: "json" };
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -18,20 +20,17 @@ export default defineConfig({
 		// Shims the bits of <dialog> jsdom hasn't implemented — see the file.
 		setupFiles: ["./src/test-setup.ts"],
 	},
-	//Oxlint configuration
-	lint: {
-		plugins: ["react", "typescript", "oxc"],
-		rules: {
-			"react/rules-of-hooks": "error",
-			"react/only-export-components": ["warn", { allowConstantExport: true }],
-		},
-	},
-	// Oxfmt configuration.
-	fmt: {
-		sortTailwindcss: true,
-		useTabs: true,
-		// Claude Code owns the formatting of its own settings file; don't
-		// fight it by reformatting there too.
-		ignorePatterns: [".claude/settings.json", "TODO.md"],
-	},
+	// Lint and format settings live in .oxlintrc.json / .oxfmtrc.json at the
+	// repo root, and are only read in here. The standalone oxlint/oxfmt (the
+	// Claude Code edit hook, editor extensions) read those files and never
+	// this one, and they're at the root so server/ is covered too. With the
+	// settings only in here, those tools fell back to their defaults and
+	// re-indented files with spaces.
+	//
+	// .claude/settings.json and TODO.md are ignored by the formatter: Claude
+	// Code owns the former's formatting, so don't fight it there.
+	// Cast because a JSON import widens "error" to string; the files
+	// themselves are what oxlint/oxfmt validate.
+	lint: oxlintConfig as UserConfig["lint"],
+	fmt: oxfmtConfig as UserConfig["fmt"],
 });
