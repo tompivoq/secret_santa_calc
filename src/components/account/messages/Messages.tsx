@@ -1,6 +1,6 @@
 import { useInboxQuery } from "../../../store/messagesApi";
 import { AskForm } from "./AskForm";
-import { ReceivedItem } from "./RecievedItem";
+import { ReceivedItem } from "./ReceivedItem";
 import { SentItem } from "./SentItem";
 
 /**
