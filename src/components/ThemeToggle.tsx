@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FaMoon, FaSun } from "react-icons/fa6";
 
 interface ThemeToggleProps {
@@ -7,17 +7,14 @@ interface ThemeToggleProps {
 }
 
 export const ThemeToggle = ({ className }: ThemeToggleProps) => {
-	const [theme, setTheme] = useState<"light" | "dark">("light");
-	const [mounted, setMounted] = useState(false);
+	// Read straight from <html> on first render: the inline script in
+	// index.html has already set the class before React starts, and there's
+	// no server render to mismatch — so no effect, and no placeholder frame.
+	const [theme, setTheme] = useState<"light" | "dark">(() =>
+		document.documentElement.classList.contains("dark") ? "dark" : "light",
+	);
 
 	const isDarkMode = theme === "dark";
-
-	// 1. Avoid hydration mismatches by syncing state on mount
-	useEffect(() => {
-		setMounted(true);
-		const isDark = document.documentElement.classList.contains("dark");
-		setTheme(isDark ? "dark" : "light");
-	}, []);
 
 	const toggleTheme = () => {
 		const nextTheme = theme === "light" ? "dark" : "light";
@@ -33,11 +30,6 @@ export const ThemeToggle = ({ className }: ThemeToggleProps) => {
 			setTheme("light");
 		}
 	};
-
-	// Render a clean placeholder skeleton until hydration is complete
-	if (!mounted) {
-		return <div className={clsx("w-10 h-10 rounded-xl bg-bg-sunken animate-pulse", className)} />;
-	}
 
 	return (
 		<button
