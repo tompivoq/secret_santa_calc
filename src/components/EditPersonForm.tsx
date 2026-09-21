@@ -1,8 +1,7 @@
 import { useForm } from "react-hook-form";
 import type { Person } from "../models/person";
 import { useUpdatePersonMutation } from "../store/peopleApi";
-import { FormActionButtons } from "./shared/Button";
-import { PersonDetailFields, type PersonDetailValues } from "./shared/PersonDetailFields";
+import { FormActionButtons, PersonDetailFields, type PersonDetailValues } from "./shared";
 
 interface FormData extends PersonDetailValues {
 	partnerId: number | null;

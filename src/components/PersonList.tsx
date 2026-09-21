@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { Person } from "../models/person";
 import { useGetPeopleQuery, useRemovePersonMutation } from "../store/peopleApi";
 import EditPersonForm from "./EditPersonForm";
-import { Modal } from "./shared/Modal";
+import { Modal } from "./shared";
 import { reject } from "lodash-es";
 import { ListPerson } from "./ListPerson";
 

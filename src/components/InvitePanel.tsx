@@ -1,7 +1,6 @@
 import type { Person } from "../models/person";
 import { useGetPeopleQuery, useInvitePeopleMutation } from "../store/peopleApi";
-import { Button } from "./shared/Button";
-import { SendOutcome } from "./shared/SendOutcome";
+import { Button, SendOutcome } from "./shared";
 
 const NO_PEOPLE: Person[] = [];
 

@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useMeQuery } from "../store/authApi";
 import { useMyMatchQuery } from "../store/matcherApi";
 import ChangePasswordForm from "../components/ChangePasswordForm";
-import EditMyDetailsForm from "../components/EditMyDetailsForm";
-import { Button } from "../components/shared/Button";
-import { Modal } from "../components/shared/Modal";
+import EditMyDetailsForm from "../components/account/EditMyDetailsForm";
+import { Messages } from "../components/account/messages/";
+import { Button, Modal } from "../components/shared";
 import { FaPencil } from "react-icons/fa6";
 
 /** One read-only "Label / value" row of someone's own details. */
@@ -55,6 +55,8 @@ function AccountPage() {
 				)}
 			</div>
 
+			<Messages />
+
 			<section
 				aria-labelledby="my-details-heading"
 				className="flex flex-col gap-3 rounded-xl border p-5"
@@ -63,8 +65,6 @@ function AccountPage() {
 					<h2 id="my-details-heading" className="text-lg">
 						Dine info
 					</h2>
-					{/* A real button, outside the heading: reachable by keyboard, and
-					    its label doesn't become part of the heading's name. */}
 					<button
 						type="button"
 						onClick={() => setOpenDialog("details")}

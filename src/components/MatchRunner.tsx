@@ -7,8 +7,7 @@ import {
 	useNotifyMutation,
 	type Draw,
 } from "../store/matcherApi";
-import { Button } from "./shared/Button";
-import { SendOutcome } from "./shared/SendOutcome";
+import { Button, SendOutcome } from "./shared";
 
 interface MatchRunnerProps {
 	selectedIds: Set<number>;

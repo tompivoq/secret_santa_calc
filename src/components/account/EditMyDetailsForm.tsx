@@ -1,8 +1,7 @@
 import { useForm } from "react-hook-form";
-import type { Person } from "../models/person";
-import { useUpdateMeMutation } from "../store/authApi";
-import { FormActionButtons } from "./shared/Button";
-import { PersonDetailFields, type PersonDetailValues } from "./shared/PersonDetailFields";
+import type { Person } from "../../models/person";
+import { useUpdateMeMutation } from "../../store/authApi";
+import { FormActionButtons, PersonDetailFields, type PersonDetailValues } from "../shared";
 
 type FormData = PersonDetailValues;
 

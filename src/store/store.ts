@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { peopleApi } from "./peopleApi";
 import { authApi } from "./authApi";
 import { matcherApi } from "./matcherApi";
+import { messagesApi } from "./messagesApi";
 
 /**
  * Creates a store instance. The app uses one singleton; tests create their
@@ -14,12 +15,14 @@ export const createStore = () =>
 			[peopleApi.reducerPath]: peopleApi.reducer,
 			[authApi.reducerPath]: authApi.reducer,
 			[matcherApi.reducerPath]: matcherApi.reducer,
+			[messagesApi.reducerPath]: messagesApi.reducer,
 		},
 		middleware: (getDefaultMiddleware) =>
 			getDefaultMiddleware().concat(
 				peopleApi.middleware,
 				authApi.middleware,
 				matcherApi.middleware,
+				messagesApi.middleware,
 			),
 	});
 

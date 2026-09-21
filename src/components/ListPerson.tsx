@@ -3,7 +3,7 @@ import { FaEnvelope, FaPen, FaRegTrashCan } from "react-icons/fa6";
 import type { Person } from "../models/person";
 import { useInvitePeopleMutation } from "../store/peopleApi";
 import { findPartner } from "../utils/person_utils";
-import { Button } from "./shared/Button";
+import { Button } from "./shared";
 
 /** Furthest along wins: someone who has logged in no longer cares when they were invited. */
 const loginStatus = (person: Person): string => {

@@ -139,3 +139,35 @@ export const assignments = sqliteTable("assignments", {
 });
 
 export type AssignmentRow = typeof assignments.$inferSelect;
+
+/**
+ * An anonymous question from a giver to their recipient, or to their
+ * recipient's partner, and its single answer.
+ *
+ * The recipient is never told who asked, nor whether it's about them or
+ * their partner — that's enforced by what the messages routes return, not
+ * by leaving anything out of this table: the sender has to be stored, or
+ * there'd be no one to show the answer to.
+ *
+ * Tied to a draw, so a re-draw leaves questions about pairings that no
+ * longer hold behind rather than carrying them over.
+ */
+export const messages = sqliteTable("messages", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	drawId: integer("draw_id")
+		.notNull()
+		.references(() => draws.id, { onDelete: "cascade" }),
+	senderId: integer("sender_id")
+		.notNull()
+		.references(() => people.id, { onDelete: "cascade" }),
+	recipientId: integer("recipient_id")
+		.notNull()
+		.references(() => people.id, { onDelete: "cascade" }),
+	question: text("question").notNull(),
+	askedAt: integer("asked_at", { mode: "timestamp" }).notNull(),
+	/** Null until answered. Only ever set once. */
+	answer: text("answer"),
+	answeredAt: integer("answered_at", { mode: "timestamp" }),
+});
+
+export type MessageRow = typeof messages.$inferSelect;

@@ -2,8 +2,7 @@ import { useAddPersonMutation, useGetPeopleQuery } from "../store/peopleApi";
 import type { Person } from "../models/person";
 import { useForm } from "react-hook-form";
 import { useMemo, useState } from "react";
-import { Button } from "./shared/Button";
-import { PersonDetailFields, type PersonDetailValues } from "./shared/PersonDetailFields";
+import { Button, PersonDetailFields, type PersonDetailValues } from "./shared";
 import { filter } from "lodash-es";
 
 interface FormData extends PersonDetailValues {
