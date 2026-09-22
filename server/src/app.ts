@@ -4,6 +4,7 @@ import { getRoutes as getAuthRoutes } from "./auth/routes.js";
 import { getRoutes as getPeopleRoutes } from "./people/routes.js";
 import { getRoutes as getMatcherRoutes } from "./matcher/routes.js";
 import { getRoutes as getMessageRoutes } from "./messages/routes.js";
+import { getRoutes as getNoteRoutes } from "./notes/routes.js";
 import { AuthVariables } from "./auth/types.js";
 import { createLoggingMailer, type Mailer } from "./mail/mailer.js";
 
@@ -42,6 +43,7 @@ export const createApp = (db: Db, authSecret: string, options: AppOptions = {}) 
 	app.route("/api/auth", auth);
 	app.route("/api/matcher", matcher);
 	app.route("/api/messages", getMessageRoutes(db, authSecret, { mailer, appBaseUrl }));
+	app.route("/api/notes", getNoteRoutes(db, authSecret));
 
 	return app;
 };

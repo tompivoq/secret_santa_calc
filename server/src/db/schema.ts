@@ -171,3 +171,26 @@ export const messages = sqliteTable("messages", {
 });
 
 export type MessageRow = typeof messages.$inferSelect;
+
+/**
+ * A person's private notepad — one each, seen by no one else, the admin
+ * included (there is no route that reads anyone's but your own).
+ *
+ * Belongs to the person rather than a draw, so it survives re-draws and
+ * the years in between. `content` is the editor's JSON document, checked
+ * against what the notes routes allow before it's ever stored — never HTML.
+ *
+ * `version` goes up by one on every save, so a save made from an older
+ * copy (another tab, another device) can be refused instead of silently
+ * overwriting what was written in between.
+ */
+export const notes = sqliteTable("notes", {
+	personId: integer("person_id")
+		.primaryKey()
+		.references(() => people.id, { onDelete: "cascade" }),
+	content: text("content").notNull(),
+	version: integer("version").notNull(),
+	updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+});
+
+export type NoteRow = typeof notes.$inferSelect;
