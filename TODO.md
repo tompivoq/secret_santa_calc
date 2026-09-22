@@ -4,7 +4,7 @@ Not scheduled — just notes to come back to.
 
 ## Where things stand
 
-Live at https://julenissen.example.com (nginx + Cloudflare in
+Live at [REAL URL REDACTED] (nginx + Cloudflare in
 front, backend as a systemd user service on the home server). Built and
 deployed:
 
