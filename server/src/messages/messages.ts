@@ -22,9 +22,9 @@ export interface SentQuestion {
 
 /**
  * A question as its recipient sees it. Built field by field rather than
- * by leaving things out of a row, so nothing about who asked — or whether
- * they were asked as the target or as the target's partner — can slip in
- * when the table grows a column.
+ * by leaving things out of a row, so nothing about who asked — nor whether
+ * the asker has them as their match, as their match's partner, or neither
+ * — can slip in when the table grows a column.
  */
 export interface ReceivedQuestion {
 	id: number;
@@ -37,8 +37,11 @@ export interface ReceivedQuestion {
 export interface Inbox {
 	/** False until a draw has been locked in; nothing below applies before that. */
 	open: boolean;
-	/** Who this person may ask: their recipient, and that person's partner if they have one. */
-	canAsk: { id: number; name: string }[];
+	/**
+	 * Who this person may ask: everyone else in the draw, with their match
+	 * and their match's partner marked and listed first.
+	 */
+	canAsk: { id: number; name: string; relation: Relation }[];
 	sent: SentQuestion[];
 	received: ReceivedQuestion[];
 }
@@ -52,11 +55,26 @@ export const asReceived = (message: MessageRow): ReceivedQuestion => ({
 });
 
 /**
- * Who `personId` may put a question to in the current locked draw, or null
- * when nothing is locked in. Empty for someone who isn't giving in it —
- * a partner outside the draw can be asked, but has no one to ask.
+ * How someone the asker may write to relates to them — shown to the asker
+ * only, who knows it already. Null for everyone else in the draw.
  */
-const askable = (db: Db, personId: number): { drawId: number; people: PersonRow[] } | null => {
+export type Relation = "match" | "partner" | null;
+
+export interface AskablePerson {
+	person: PersonRow;
+	relation: Relation;
+}
+
+/**
+ * Who `personId` may put a question to in the current locked draw, or null
+ * when nothing is locked in: everyone else taking part, plus their match's
+ * partner if that person is outside the draw. Ordered match first, then
+ * the match's partner, then everyone else by name.
+ *
+ * Empty for someone who isn't giving in the draw: a partner outside it can
+ * be asked, but has no one to ask.
+ */
+const askable = (db: Db, personId: number): { drawId: number; people: AskablePerson[] } | null => {
 	const draw = getLatestLockedDraw(db);
 	if (!draw) {
 		return null;
@@ -67,16 +85,25 @@ const askable = (db: Db, personId: number): { drawId: number; people: PersonRow[
 		return { drawId: draw.id, people: [] };
 	}
 
+	const participantIds = draw.assignments.map((assignment) => assignment.giverId);
 	const target = getPeopleByIds(db, [mine.recipientId])[0];
-	if (!target) {
-		return { drawId: draw.id, people: [] };
-	}
-	const partner =
-		target.partnerId !== null && target.partnerId !== personId
-			? getPeopleByIds(db, [target.partnerId])[0]
-			: undefined;
+	const partnerId = target?.partnerId ?? null;
+	const ids = new Set([...participantIds, ...(partnerId === null ? [] : [partnerId])]);
+	ids.delete(personId);
 
-	return { drawId: draw.id, people: partner ? [target, partner] : [target] };
+	const relationOf = (id: number): Relation =>
+		id === mine.recipientId ? "match" : id === partnerId ? "partner" : null;
+	const rank = { match: 0, partner: 1 } as const;
+
+	const people = getPeopleByIds(db, [...ids])
+		.map((person) => ({ person, relation: relationOf(person.id) }))
+		.sort(
+			(a, b) =>
+				(a.relation ? rank[a.relation] : 2) - (b.relation ? rank[b.relation] : 2) ||
+				a.person.name.localeCompare(b.person.name, "da"),
+		);
+
+	return { drawId: draw.id, people };
 };
 
 /**
@@ -114,7 +141,11 @@ export const getInbox = (db: Db, personId: number): Inbox => {
 
 	return {
 		open: true,
-		canAsk: allowed.people.map((person) => ({ id: person.id, name: person.name })),
+		canAsk: allowed.people.map(({ person, relation }) => ({
+			id: person.id,
+			name: person.name,
+			relation,
+		})),
 		sent: sentRows.map((row) => ({
 			id: row.id,
 			to: { id: row.recipientId, name: namesById.get(row.recipientId) ?? "Ukendt" },
@@ -132,8 +163,9 @@ export type AskResult =
 	| { ok: false; reason: "closed" | "not-allowed" };
 
 /**
- * Stores a question from `senderId` to `recipientId`, provided the latter
- * is the sender's recipient in the locked draw, or that person's partner.
+ * Stores a question from `senderId` to `recipientId`, provided the sender
+ * is taking part in the locked draw and the recipient is someone they may
+ * ask — see askable.
  */
 export const askQuestion = (
 	db: Db,
@@ -145,7 +177,7 @@ export const askQuestion = (
 	if (!allowed) {
 		return { ok: false, reason: "closed" };
 	}
-	const recipient = allowed.people.find((person) => person.id === recipientId);
+	const recipient = allowed.people.find(({ person }) => person.id === recipientId)?.person;
 	if (!recipient) {
 		return { ok: false, reason: "not-allowed" };
 	}

@@ -28,9 +28,9 @@ export interface MessagesOptions {
 }
 
 /**
- * Anonymous questions between a giver and their recipient (or the
- * recipient's partner). Open to everyone signed in, and deliberately with
- * no admin view: the admin takes part in the draw like anyone else.
+ * Anonymous questions from anyone taking part in the draw to anyone else in
+ * it. Open to everyone signed in, and deliberately with no admin view: the
+ * admin takes part in the draw like anyone else.
  */
 export const getRoutes = (db: Db, authSecret: string, { mailer, appBaseUrl }: MessagesOptions) => {
 	/**
@@ -62,7 +62,7 @@ export const getRoutes = (db: Db, authSecret: string, { mailer, appBaseUrl }: Me
 			if (!result.ok) {
 				return result.reason === "closed"
 					? c.json({ error: "Messages open once the draw is locked in" }, 409)
-					: c.json({ error: "You can only ask your recipient or their partner" }, 403);
+					: c.json({ error: "You can only ask someone else taking part in the draw" }, 403);
 			}
 
 			const emailed = await notify(result.recipient, questionReceivedEmail);

@@ -22,11 +22,21 @@ export interface ReceivedQuestion {
 	answeredAt: string | null;
 }
 
+export interface AskablePerson {
+	id: number;
+	name: string;
+	/** Your match, your match's partner, or (null) anyone else. */
+	relation: "match" | "partner" | null;
+}
+
 export interface Inbox {
 	/** False until the draw is locked in. */
 	open: boolean;
-	/** Your recipient, and their partner if they have one. */
-	canAsk: { id: number; name: string }[];
+	/**
+	 * Everyone else in the draw, match first, then their partner, then the
+	 * rest by name. `relation` is only ever about how they relate to you.
+	 */
+	canAsk: AskablePerson[];
 	sent: SentQuestion[];
 	received: ReceivedQuestion[];
 }

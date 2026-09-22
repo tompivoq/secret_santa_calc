@@ -1,10 +1,19 @@
 import { useState, type SubmitEvent } from "react";
-import { useAskMutation } from "../../../store/messagesApi";
+import { useAskMutation, type AskablePerson } from "../../../store/messagesApi";
 import { Button } from "../../shared";
 import { fieldClassName, MAX_MESSAGE_LENGTH } from "./shared";
 
-/** Asking your recipient, or their partner, something without saying who's asking. */
-export const AskForm = ({ canAsk }: { canAsk: { id: number; name: string }[] }) => {
+const RELATION_LABELS = { match: "Match", partner: "Partner" } as const;
+
+/** "Anna (Match)", "John (Partner)", or just the name for anyone else. */
+const optionLabel = ({ name, relation }: AskablePerson) =>
+	relation ? `${name} (${RELATION_LABELS[relation]})` : name;
+
+/**
+ * Asking anyone else in the draw something without saying who's asking.
+ * Defaults to the first in the list, which the server puts as your match.
+ */
+export const AskForm = ({ canAsk }: { canAsk: AskablePerson[] }) => {
 	const [ask, { data: result, error, isLoading, reset }] = useAskMutation();
 	const [recipientId, setRecipientId] = useState(canAsk[0]!.id);
 	const [question, setQuestion] = useState("");
@@ -37,7 +46,7 @@ export const AskForm = ({ canAsk }: { canAsk: { id: number; name: string }[] }) 
 					>
 						{canAsk.map((person) => (
 							<option key={person.id} value={person.id}>
-								{person.name}
+								{optionLabel(person)}
 							</option>
 						))}
 					</select>
@@ -45,7 +54,7 @@ export const AskForm = ({ canAsk }: { canAsk: { id: number; name: string }[] }) 
 			)}
 
 			<label className="flex flex-col gap-1 text-sm">
-				{canAsk.length > 1 ? "Spørgsmål" : `Spørgsmål til ${canAsk[0]!.name}`}
+				{canAsk.length > 1 ? "Spørgsmål" : `Spørgsmål til ${optionLabel(canAsk[0]!)}`}
 				<textarea
 					value={question}
 					onChange={(event) => {

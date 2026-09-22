@@ -16,15 +16,22 @@ const PERSON: Person = {
 	isAdmin: false,
 };
 
-const ANNA = { id: 2, name: "Anna" };
-const BJORN = { id: 3, name: "Bjørn" };
+const ANNA = { id: 2, name: "Anna", relation: "match" } as const;
+const BJORN = { id: 3, name: "Bjørn", relation: "partner" } as const;
+const HENRY = { id: 4, name: "Henry", relation: null };
 
 /**
  * A signed-in participant whose inbox is stateful: asking and answering
  * change what the next GET returns, the way the real server does.
  */
 const stubApi = (initial: Partial<Inbox> = {}) => {
-	let inbox: Inbox = { open: true, canAsk: [ANNA, BJORN], sent: [], received: [], ...initial };
+	let inbox: Inbox = {
+		open: true,
+		canAsk: [ANNA, BJORN, HENRY],
+		sent: [],
+		received: [],
+		...initial,
+	};
 	const asked: { recipientId: number; question: string }[] = [];
 	const answered: { id: number; answer: string }[] = [];
 
@@ -51,7 +58,8 @@ const stubApi = (initial: Partial<Inbox> = {}) => {
 			if (url.pathname === "/api/messages" && request.method === "POST") {
 				const body = (await request.json()) as { recipientId: number; question: string };
 				asked.push(body);
-				const to = inbox.canAsk.find((person) => person.id === body.recipientId)!;
+				const { id, name } = inbox.canAsk.find((person) => person.id === body.recipientId)!;
+				const to = { id, name };
 				const message = {
 					id: 100 + asked.length,
 					to,
@@ -119,7 +127,7 @@ describe("anonymous messages", () => {
 		renderAccountPage();
 
 		const section = await messagesSection();
-		await user.selectOptions(section.getByLabelText("Til"), "Bjørn");
+		await user.selectOptions(section.getByLabelText("Til"), "Bjørn (Partner)");
 		await user.type(section.getByLabelText("Spørgsmål"), "Er I hjemme d. 12. december?");
 		await user.click(section.getByRole("button", { name: "Send spørgsmål" }));
 
@@ -136,7 +144,22 @@ describe("anonymous messages", () => {
 
 		const section = await messagesSection();
 		expect(section.queryByLabelText("Til")).toBeNull();
-		expect(section.getByLabelText("Spørgsmål til Anna")).not.toBeNull();
+		expect(section.getByLabelText("Spørgsmål til Anna (Match)")).not.toBeNull();
+	});
+
+	it("marks your match and their partner in the list, and leaves everyone else unmarked", async () => {
+		stubApi();
+		renderAccountPage();
+
+		const section = await messagesSection();
+		const options = within(section.getByLabelText("Til")).getAllByRole("option");
+		expect(options.map((option) => option.textContent)).toEqual([
+			"Anna (Match)",
+			"Bjørn (Partner)",
+			"Henry",
+		]);
+		// The match is who you'd most likely ask, so it's the default.
+		expect((section.getByLabelText("Til") as HTMLSelectElement).value).toBe(String(ANNA.id));
 	});
 
 	it("shows a received question anonymously, and answers it once", async () => {

@@ -33,8 +33,8 @@ const seed = (name: string): CreatedPerson =>
 
 /**
  * Anna and Bjørn are partners. Carl gives to Anna, Dora to Bjørn — so Anna
- * can be asked by Carl as his recipient, and by Dora as her recipient's
- * partner, and must not be able to tell the two apart.
+ * can be asked by Carl as his match, and by Dora as her match's partner,
+ * and must not be able to tell the two apart (nor from anyone else asking).
  */
 const setUp = ({ lock = true } = {}) => {
 	const anna = seed("Anna");
@@ -69,7 +69,7 @@ const loginAs = async (person: CreatedPerson) => {
 const getInbox = async (cookie: string) =>
 	(await (await app.request("/api/messages", { headers: { cookie } })).json()) as {
 		open: boolean;
-		canAsk: { id: number; name: string }[];
+		canAsk: { id: number; name: string; relation: string | null }[];
 		sent: { id: number; to: { id: number }; question: string; answer: string | null }[];
 		received: Record<string, unknown>[];
 	};
@@ -98,25 +98,58 @@ describe("asking questions", () => {
 		expect((await ask(cookie, anna.id, "Hvad er din skostørrelse?")).status).toBe(409);
 	});
 
-	it("offers the recipient and their partner, and no one else", async () => {
-		const { anna, bjorn, carl } = setUp();
+	it("offers everyone else in the draw, with the match and their partner marked and first", async () => {
+		const { anna, bjorn, carl, dora } = setUp();
 		const inbox = await getInbox(await loginAs(carl));
 
 		expect(inbox.open).toBe(true);
-		expect(inbox.canAsk.map((p) => p.id).sort()).toEqual([anna.id, bjorn.id].sort());
+		expect(inbox.canAsk).toEqual([
+			{ id: anna.id, name: "Anna", relation: "match" },
+			{ id: bjorn.id, name: "Bjorn", relation: "partner" },
+			{ id: dora.id, name: "Dora", relation: null },
+		]);
 	});
 
-	it("lets a giver ask their recipient's partner", async () => {
-		const { bjorn, carl } = setUp();
-		const res = await ask(await loginAs(carl), bjorn.id, "Er I hjemme d. 12. december?");
+	it("lets a giver ask anyone else in the draw", async () => {
+		const { bjorn, carl, dora } = setUp();
+		const cookie = await loginAs(carl);
 
-		expect(res.status).toBe(201);
+		expect((await ask(cookie, bjorn.id, "Er I hjemme d. 12. december?")).status).toBe(201);
+		expect((await ask(cookie, dora.id, "Hvad ønsker Anna sig?")).status).toBe(201);
 	});
 
-	it("refuses anyone who is neither the recipient nor their partner", async () => {
-		const { carl, dora } = setUp();
+	it("includes the match's partner even when they aren't in the draw themselves", async () => {
+		const { anna, carl, dora } = setUp();
+		// Anna gives to Dora; Dora's partner Eve isn't taking part.
+		const eve = seed("Eve");
+		setPartner(db, dora.id, eve.id);
 
-		expect((await ask(await loginAs(carl), dora.id, "Hej?")).status).toBe(403);
+		const inbox = await getInbox(await loginAs(anna));
+		expect(inbox.canAsk.find((p) => p.id === eve.id)).toEqual({
+			id: eve.id,
+			name: "Eve",
+			relation: "partner",
+		});
+		// ...but only for whoever has Dora: to Carl she's no one in particular.
+		expect((await getInbox(await loginAs(carl))).canAsk.map((p) => p.id)).not.toContain(eve.id);
+	});
+
+	it("refuses yourself, and anyone outside the draw who isn't your match's partner", async () => {
+		const { carl } = setUp();
+		const eve = seed("Eve");
+		const cookie = await loginAs(carl);
+
+		expect((await ask(cookie, carl.id, "Hej?")).status).toBe(403);
+		expect((await ask(cookie, eve.id, "Hej?")).status).toBe(403);
+	});
+
+	it("gives someone outside the draw no one to ask", async () => {
+		const { anna } = setUp();
+		const eve = seed("Eve");
+		const cookie = await loginAs(eve);
+
+		expect((await getInbox(cookie)).canAsk).toEqual([]);
+		expect((await ask(cookie, anna.id, "Hej?")).status).toBe(403);
 	});
 
 	it("rejects an empty or overlong question", async () => {
