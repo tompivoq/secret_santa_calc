@@ -38,6 +38,9 @@ deployed:
   attributes set as HTML) will be blocked until the policy allows it — which
   is why the theme script lives in `public/theme.js` and the notes editor
   runs with `injectCSS: false`.
+- **Login rate limiting** — a Cloudflare rule blocks an IP for 10 seconds
+  after 5 login attempts within 10 seconds, and the login page tells a
+  blocked person to wait rather than that their password is wrong.
 
 ## Open follow-ups
 
@@ -49,8 +52,10 @@ Things that came up along the way. None are urgent.
   with `VACUUM INTO` into `/claude/backups/` (never `cp`, which copies an
   empty file while SQLite is in WAL mode). A daily cron job under
   `claude_ssh` needs no root.
-- **No rate limiting on `/api/auth/login`.** Easiest as a Cloudflare rate
-  limiting rule rather than in the app.
+- **Cloudflare can be bypassed if the origin is reachable directly.** The
+  rate limit (and Cloudflare in general) only covers traffic that goes
+  through Cloudflare. If port 443 on the home connection also accepts
+  connections from anywhere, restrict it to Cloudflare's IP ranges.
 - **Server dependencies are a step behind the lockfile.** The server still
   runs `hono` 4.13.5 and `zod` 4.5.4; the lockfile has 4.13.8 and 4.6.5.
   Deploys only copy `dist/`, so catching up means `npm ci --omit=dev` on

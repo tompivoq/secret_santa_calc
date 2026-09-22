@@ -10,6 +10,35 @@ interface FormData {
 	password: string;
 }
 
+/**
+ * The HTTP status behind an RTK Query error, if there was a response at all.
+ * A non-JSON body — like Cloudflare's plain-text "error code: 1015" when it
+ * rate-limits — comes back as a PARSING_ERROR with the real status tucked
+ * into `originalStatus`, so that's checked too.
+ */
+const httpStatus = (error: unknown): number | undefined => {
+	if (typeof error !== "object" || error === null) return undefined;
+	if ("originalStatus" in error && typeof error.originalStatus === "number") {
+		return error.originalStatus;
+	}
+	if ("status" in error && typeof error.status === "number") return error.status;
+	return undefined;
+};
+
+/** What to tell someone whose login failed, by why it failed. */
+const loginErrorMessage = (error: unknown): string => {
+	switch (httpStatus(error)) {
+		case 401:
+			return "Forkert email eller password";
+		case 429:
+			// Cloudflare blocks an IP briefly after a burst of attempts. Saying
+			// "wrong password" here would send them off retyping one that's fine.
+			return "For mange loginforsøg. Vent lidt, og prøv igen.";
+		default:
+			return "Noget gik galt med at logge ind. Prøv igen om lidt.";
+	}
+};
+
 const inputClasses = (hasError: boolean) =>
 	clsx(
 		"rounded-md border px-2.5 py-2 text-base",
@@ -50,8 +79,8 @@ function LoginPage() {
 				}),
 			);
 			navigate("/account");
-		} catch {
-			setError("root", { message: "Forkert email eller password" });
+		} catch (error) {
+			setError("root", { message: loginErrorMessage(error) });
 		}
 	};
 

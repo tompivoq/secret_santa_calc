@@ -25,6 +25,8 @@ interface StubAuthApiOptions {
 	mustChangePassword?: boolean;
 	/** False stands in for a session started by following an emailed login link. */
 	requiresCurrentPassword?: boolean;
+	/** Answers every login attempt instead of the fake credential check. */
+	onLogin?: () => Response;
 }
 
 /**
@@ -40,6 +42,7 @@ const stubAuthApi = ({
 	startAuthenticated = false,
 	mustChangePassword = true,
 	requiresCurrentPassword = true,
+	onLogin,
 }: StubAuthApiOptions = {}) => {
 	const state = { password, mustChangePassword, authenticated: startAuthenticated };
 	/** The bodies sent to change-password, for asserting on what was actually submitted. */
@@ -52,6 +55,9 @@ const stubAuthApi = ({
 			const url = new URL(request.url);
 
 			if (url.pathname === "/api/auth/login" && request.method === "POST") {
+				if (onLogin) {
+					return onLogin();
+				}
 				const { email, password: given } = (await request.json()) as {
 					email: string;
 					password: string;
@@ -186,6 +192,41 @@ describe("logging in", () => {
 		await user.click(screen.getByRole("button", { name: "Log ind" }));
 
 		await screen.findByText("Forkert email eller password");
+	});
+
+	const tryToLogIn = async () => {
+		const user = userEvent.setup();
+		renderAt("/login");
+		await user.type(screen.getByLabelText("E-mail"), PERSON.email);
+		await user.type(screen.getByLabelText("Password"), "initial-pw");
+		await user.click(screen.getByRole("button", { name: "Log ind" }));
+	};
+
+	it("says to wait, rather than blaming the password, when rate-limited", async () => {
+		// Cloudflare's own block response: plain text, not the API's JSON.
+		stubAuthApi({
+			onLogin: () =>
+				new Response("error code: 1015", {
+					status: 429,
+					headers: { "Content-Type": "text/plain" },
+				}),
+		});
+		await tryToLogIn();
+
+		await screen.findByText("For mange loginforsøg. Vent lidt, og prøv igen.");
+		expect(screen.queryByText("Forkert email eller password")).toBeNull();
+	});
+
+	it("doesn't blame the password when the server couldn't be reached", async () => {
+		stubAuthApi({
+			onLogin: () => {
+				throw new TypeError("Failed to fetch");
+			},
+		});
+		await tryToLogIn();
+
+		await screen.findByText("Noget gik galt med at logge ind. Prøv igen om lidt.");
+		expect(screen.queryByText("Forkert email eller password")).toBeNull();
 	});
 
 	it("does not bounce back to /login while the invalidated me-query is still refetching", async () => {
