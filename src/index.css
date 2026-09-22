@@ -336,6 +336,71 @@
 	}
 }
 
+/*
+ * The notes editor's content (see components/account/notes). Preflight
+ * strips list markers and heading sizes everywhere, so the editor gets its
+ * own back — scoped to .notes-content so nothing else is affected.
+ */
+@layer components {
+	.notes-content {
+		background-color: var(--color-input-bg);
+		border-color: var(--color-input-border);
+		outline: none;
+	}
+	.notes-content:focus {
+		border-color: var(--color-input-focus);
+	}
+	.notes-content > * + * {
+		margin-top: 0.5em;
+	}
+	.notes-content h2 {
+		font-size: var(--text-xl);
+	}
+	.notes-content h3 {
+		font-size: var(--text-lg);
+	}
+	.notes-content ul,
+	.notes-content ol {
+		padding-left: 1.5em;
+	}
+	.notes-content ul {
+		list-style: disc;
+	}
+	.notes-content ol {
+		list-style: decimal;
+	}
+	.notes-content a {
+		text-decoration: underline;
+	}
+	.notes-content ul[data-type="taskList"] {
+		list-style: none;
+		padding-left: 0.25em;
+	}
+	.notes-content ul[data-type="taskList"] li {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5em;
+	}
+	.notes-content ul[data-type="taskList"] li > label {
+		margin-top: 0.2em;
+	}
+	.notes-content ul[data-type="taskList"] li > div {
+		flex: 1;
+	}
+	.notes-content ul[data-type="taskList"] li[data-checked="true"] > div {
+		color: var(--color-text-muted);
+		text-decoration: line-through;
+	}
+	/* The placeholder shown in an empty notepad (Tiptap's Placeholder). */
+	.notes-content p.is-editor-empty:first-child::before {
+		content: attr(data-placeholder);
+		color: var(--color-text-muted);
+		float: left;
+		height: 0;
+		pointer-events: none;
+	}
+}
+
 @layer utilities {
 	.text-balance {
 		text-wrap: balance;

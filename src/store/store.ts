@@ -3,6 +3,7 @@ import { peopleApi } from "./peopleApi";
 import { authApi } from "./authApi";
 import { matcherApi } from "./matcherApi";
 import { messagesApi } from "./messagesApi";
+import { notesApi } from "./notesApi";
 
 /**
  * Creates a store instance. The app uses one singleton; tests create their
@@ -16,6 +17,7 @@ export const createStore = () =>
 			[authApi.reducerPath]: authApi.reducer,
 			[matcherApi.reducerPath]: matcherApi.reducer,
 			[messagesApi.reducerPath]: messagesApi.reducer,
+			[notesApi.reducerPath]: notesApi.reducer,
 		},
 		middleware: (getDefaultMiddleware) =>
 			getDefaultMiddleware().concat(
@@ -23,6 +25,7 @@ export const createStore = () =>
 				authApi.middleware,
 				matcherApi.middleware,
 				messagesApi.middleware,
+				notesApi.middleware,
 			),
 	});
 

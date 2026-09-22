@@ -4,6 +4,7 @@ import { useMyMatchQuery } from "../store/matcherApi";
 import ChangePasswordForm from "../components/ChangePasswordForm";
 import EditMyDetailsForm from "../components/account/EditMyDetailsForm";
 import { Messages } from "../components/account/messages/";
+import { Notes } from "../components/account/notes";
 import { Button, Modal } from "../components/shared";
 import { FaPencil } from "react-icons/fa6";
 
@@ -56,6 +57,8 @@ function AccountPage() {
 			</div>
 
 			<Messages />
+
+			<Notes />
 
 			<section
 				aria-labelledby="my-details-heading"

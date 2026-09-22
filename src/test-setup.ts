@@ -24,3 +24,26 @@ if (typeof HTMLDialogElement !== "undefined") {
 		};
 	}
 }
+
+/**
+ * jsdom does no layout, so it leaves out the geometry calls the notes
+ * editor (ProseMirror, under Tiptap) makes to map the cursor to the screen
+ * and back. These answer "nothing is anywhere", which is enough for it to
+ * carry on — the tests assert on content and requests, never on position.
+ */
+if (typeof Range !== "undefined") {
+	const noRect = () => new DOMRect(0, 0, 0, 0);
+	const noRects = () =>
+		Object.assign([] as DOMRect[], { item: () => null }) as unknown as DOMRectList;
+	Range.prototype.getBoundingClientRect ??= noRect;
+	Range.prototype.getClientRects ??= noRects;
+	// Not part of Text in the DOM spec (hence the cast), but ProseMirror asks
+	// text nodes too.
+	const text = Text.prototype as unknown as Pick<
+		Element,
+		"getBoundingClientRect" | "getClientRects"
+	>;
+	text.getBoundingClientRect ??= noRect;
+	text.getClientRects ??= noRects;
+	document.elementFromPoint ??= () => null;
+}
