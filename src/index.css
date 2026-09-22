@@ -191,8 +191,6 @@
 	--bg-page: hsl(0, 0%, 93%);
 	--bg-topbar-start: hsl(0, 85%, 20%);
 	--bg-topbar-end: hsl(0, 85%, 30%);
-	/*--bg-topbar-start: hsl(0, 85%, 28%);
-  --bg-topbar-end: hsl(0, 85%, 40%);*/
 	--bg-surface: hsl(0, 0%, 95%);
 	--bg-elevated: hsl(180, 20%, 95%);
 	--bg-sunken: hsl(0, 0%, 86%);

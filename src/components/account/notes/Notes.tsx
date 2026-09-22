@@ -45,7 +45,9 @@ export const Notes = () => {
 				<p className="text-text-muted text-sm">Henter dine noter…</p>
 			) : (
 				<Suspense fallback={<p className="text-text-muted text-sm">Henter editor…</p>}>
-					<NotesEditor note={note} />
+					<div className="bg-bg-elevated rounded-md border p-2">
+						<NotesEditor note={note} />
+					</div>
 				</Suspense>
 			)}
 		</section>

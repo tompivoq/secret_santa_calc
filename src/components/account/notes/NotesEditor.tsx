@@ -2,33 +2,15 @@ import { TaskItem, TaskList } from "@tiptap/extension-list";
 import { Placeholder } from "@tiptap/extensions";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
-import clsx from "clsx";
-import { useEffect, useRef, useState, type ReactNode, type SubmitEvent } from "react";
-import {
-	FaBold,
-	FaHeading,
-	FaItalic,
-	FaLink,
-	FaListCheck,
-	FaListOl,
-	FaListUl,
-} from "react-icons/fa6";
+import { useEffect, useRef, useState, type SubmitEvent } from "react";
 import { useSaveNoteMutation, type Note } from "../../../store/notesApi";
 import { Button } from "../../shared";
 import { isSafeHref, normalizeHref } from "./links";
+import { EditorToolbar } from "./EditorToolbar";
+import type { ActiveState, SaveStatus } from "./types";
 
 /** How long typing has to pause before the note is saved. */
 const SAVE_DELAY_MS = 1000;
-
-type SaveStatus = "saved" | "pending" | "saving" | "error" | "conflict";
-
-const STATUS_TEXT: Record<SaveStatus, string> = {
-	saved: "Gemt",
-	pending: "Ikke gemt endnu…",
-	saving: "Gemmer…",
-	error: "Kunne ikke gemme",
-	conflict: "Ikke gemt",
-};
 
 const EMPTY_DOCUMENT = { type: "doc", content: [{ type: "paragraph" }] };
 
@@ -75,34 +57,6 @@ const extensions = [
 		placeholder: "Skriv gaveidéer, links til butikker, datoer…",
 	}),
 ];
-
-const ToolbarButton = ({
-	label,
-	active,
-	onClick,
-	children,
-}: {
-	label: string;
-	active: boolean;
-	onClick: () => void;
-	children: ReactNode;
-}) => (
-	<button
-		type="button"
-		aria-label={label}
-		title={label}
-		aria-pressed={active}
-		// Keeps the editor's selection, so the button applies to it.
-		onMouseDown={(event) => event.preventDefault()}
-		onClick={onClick}
-		className={clsx(
-			"cursor-pointer rounded-md border p-2",
-			active ? "bg-accent text-accent-foreground" : "hover:bg-bg-sunken border-transparent",
-		)}
-	>
-		{children}
-	</button>
-);
 
 /** Adding, changing or removing the link under the cursor. */
 const LinkForm = ({ editor, onDone }: { editor: Editor; onDone: () => void }) => {
@@ -255,7 +209,7 @@ function NotesEditor({ note }: { note: Note }) {
 		onUpdate: ({ editor }) => scheduleSave(editor),
 		editorProps: {
 			attributes: {
-				class: "notes-content min-h-40 rounded-md border px-3 py-2 text-left",
+				class: "notes-content min-h-40 rounded-md border px-3 py-2 text-left bg-bg-surface",
 				role: "textbox",
 				"aria-multiline": "true",
 				"aria-label": "Mine noter",
@@ -276,7 +230,7 @@ function NotesEditor({ note }: { note: Note }) {
 		},
 	});
 
-	const active = useEditorState({
+	const active: ActiveState = useEditorState({
 		editor,
 		selector: ({ editor: current }) => ({
 			bold: current?.isActive("bold") ?? false,
@@ -341,70 +295,20 @@ function NotesEditor({ note }: { note: Note }) {
 
 	return (
 		<div className="flex flex-col gap-2">
-			<div
-				role="toolbar"
-				aria-label="Formatering"
-				className="flex flex-row flex-wrap items-center gap-1"
-			>
-				<ToolbarButton label="Fed" active={active.bold} onClick={() => chain().toggleBold().run()}>
-					<FaBold className="size-3.5" aria-hidden />
-				</ToolbarButton>
-				<ToolbarButton
-					label="Kursiv"
-					active={active.italic}
-					onClick={() => chain().toggleItalic().run()}
-				>
-					<FaItalic className="size-3.5" aria-hidden />
-				</ToolbarButton>
-				<ToolbarButton
-					label="Overskrift"
-					active={active.heading}
-					onClick={() => chain().toggleHeading({ level: 2 }).run()}
-				>
-					<FaHeading className="size-3.5" aria-hidden />
-				</ToolbarButton>
-				<ToolbarButton
-					label="Punktliste"
-					active={active.bulletList}
-					onClick={() => chain().toggleBulletList().run()}
-				>
-					<FaListUl className="size-3.5" aria-hidden />
-				</ToolbarButton>
-				<ToolbarButton
-					label="Nummereret liste"
-					active={active.orderedList}
-					onClick={() => chain().toggleOrderedList().run()}
-				>
-					<FaListOl className="size-3.5" aria-hidden />
-				</ToolbarButton>
-				<ToolbarButton
-					label="Tjekliste"
-					active={active.taskList}
-					onClick={() => chain().toggleTaskList().run()}
-				>
-					<FaListCheck className="size-3.5" aria-hidden />
-				</ToolbarButton>
-				<ToolbarButton
-					label="Link"
-					active={active.link || linkFormOpen}
-					onClick={() => setLinkFormOpen((open) => !open)}
-				>
-					<FaLink className="size-3.5" aria-hidden />
-				</ToolbarButton>
-
-				<span role="status" className="text-text-muted ml-auto text-xs">
-					{STATUS_TEXT[status]}
-				</span>
-			</div>
-
+			<EditorToolbar
+				active={active}
+				chain={chain}
+				linkFormOpen={linkFormOpen}
+				toggleLinkForm={() => setLinkFormOpen((open) => !open)}
+				status={status}
+			/>
 			{linkFormOpen && <LinkForm editor={editor} onDone={() => setLinkFormOpen(false)} />}
 
 			{!linkFormOpen && active.link && active.href && isSafeHref(active.href) && (
-				<p className="text-sm">
+				<p className="bg-bg-sunken w-fit rounded-sm px-2 py-1 text-sm">
 					<a href={active.href} target="_blank" rel="noopener noreferrer nofollow">
-						Åbn link ↗
-					</a>{" "}
-					<span className="text-text-muted text-xs break-all">{active.href}</span>
+						Åbn link ↗ ({active.href})
+					</a>
 				</p>
 			)}
 
