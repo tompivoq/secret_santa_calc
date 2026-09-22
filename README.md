@@ -142,6 +142,16 @@ npm run build   # compiles to server/dist, migrations included
 npm start       # runs the compiled server (see the env vars below)
 ```
 
+## Security headers
+
+In production the frontend is served by nginx with a strict
+Content-Security-Policy and a few other security headers, from
+[deploy/nginx/security-headers.conf](deploy/nginx/security-headers.conf)
+(install steps are in the file). The policy allows only the app's own
+scripts, styles and API, nothing inline, and no framing. So anything added
+later that loads from another origin (web fonts, images, analytics) or
+runs inline has to be allowed there first, or the browser blocks it.
+
 ## Server environment variables
 
 All optional in development: the server runs without any of them, and

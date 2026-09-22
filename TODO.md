@@ -30,6 +30,14 @@ deployed:
   editor and on the server, and conflicts between devices put to the user.
 - **Theming** — light/dark themes on shared tokens, and a style guide at
   `/styleguide` (admin-only) that flags any token that doesn't resolve.
+- **Security headers** — nginx serves a strict Content-Security-Policy
+  (only the app's own scripts, styles and API; nothing inline, no framing),
+  plus `nosniff`, a referrer policy and `X-Frame-Options`, from a snippet
+  included in both server blocks. **Anything new from another origin** (web
+  fonts, images, analytics) **or inline** (`<script>`/`<style>` tags, style
+  attributes set as HTML) will be blocked until the policy allows it — which
+  is why the theme script lives in `public/theme.js` and the notes editor
+  runs with `injectCSS: false`.
 
 ## Open follow-ups
 
@@ -37,10 +45,6 @@ Things that came up along the way. None are urgent.
 
 ### Security and operations
 
-- **Content Security Policy.** An nginx header allowing only the app's own
-  scripts would block injected code even if a bug let some through. Needs
-  a hash (or nonce) for the inline theme script in `index.html`. A root
-  step on the server.
 - **No scheduled backups.** Backups are only taken by hand before deploys,
   with `VACUUM INTO` into `/claude/backups/` (never `cp`, which copies an
   empty file while SQLite is in WAL mode). A daily cron job under
