@@ -205,6 +205,10 @@ function NotesEditor({ note }: { note: Note }) {
 
 	const editor = useEditor({
 		extensions,
+		// Tiptap would add its base styles as a <style> tag at runtime, which
+		// the Content-Security-Policy (style-src 'self') refuses. The same
+		// rules live in index.css instead.
+		injectCSS: false,
 		content: note.content ?? EMPTY_DOCUMENT,
 		onUpdate: ({ editor }) => scheduleSave(editor),
 		editorProps: {

@@ -10,16 +10,8 @@
 		<link rel="apple-touch-icon" sizes="180x180" href="/favicon-180x180.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Julenissen</title>
-		<script>
-			if (
-				localStorage.theme === "dark" ||
-				(!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)
-			) {
-				document.documentElement.classList.add("dark");
-			} else {
-				document.documentElement.classList.remove("dark");
-			}
-		</script>
+		<!-- Sets the theme before first paint. Not inline: see public/theme.js. -->
+		<script src="/theme.js"></script>
 	</head>
 	<body class="m-0 text-[18px]/[145%] antialiased">
 		<div id="root"></div>
